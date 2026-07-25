@@ -29,7 +29,7 @@
 *.ico binary
 *.mo binary
 
-# Remove files for archives generated using `git archive`
+# Remove files for archives generated using git archive
 .editorconfig export-ignore
 .gitattributes export-ignore
 .gitignore export-ignore
