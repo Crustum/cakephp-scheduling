@@ -1,0 +1,62 @@
+{
+    "name": "crustum/cakephp-scheduling",
+    "description": "CakePHP Scheduling manager",
+    "type": "cakephp-plugin",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.2",
+        "cakephp/cakephp": "^5.0",
+        "crustum/plugin-manifest": "^1.0",
+        "dragonmantank/cron-expression": "^3.3.2",
+        "symfony/process": "^6.0",
+        "skie/signal_handler": "^1.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.5 | ^12.5",
+        "crustum/rhythm": "^1.0",
+        "rector/rector": "^2.5",
+        "cakephp/cakephp-codesniffer": "^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Crustum\\Scheduling\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "TestApp\\": "tests/TestApp/src",
+            "TestPlugin\\": "tests/test_app/plugins/TestPlugin/src/",
+            "Crustum\\Scheduling\\Test\\": "tests/"
+        }
+    },
+    "scripts": {
+        "check": [
+            "@cs-check",
+            "@test",
+            "@analyse"
+        ],
+        "analyse": [
+            "@stan"
+        ],
+        "cs-check": "phpcs -p --standard=phpcs.xml src/ tests/",
+        "cs-fix": "phpcbf --standard=phpcs.xml src/ tests/",
+        "test": "phpunit",
+        "test:unit": "phpunit --testsuite=Unit",
+        "test:integration": "phpunit --testsuite=Integration",
+        "test:coverage": "phpunit --coverage-html coverage",
+        "rector-check": "vendor/bin/rector process --dry-run",
+        "rector-fix": "vendor/bin/rector process",
+        "stan": "tools/phpstan analyse src/",
+        "psalm": "tools/psalm --show-info=false",
+        "stan-tests": "tools/phpstan analyze -c tests/phpstan.neon",
+        "stan-baseline": "tools/phpstan --generate-baseline"
+    },
+    "extra": {
+        "installer-name": "Scheduling"
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
+    }
+}

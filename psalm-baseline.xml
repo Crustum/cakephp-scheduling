@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<files psalm-version="7.0.0-beta11@24cb5084ef3db7259d26047ea3a7ddef30f36144">
+  <file src="src/Command/ScheduleFinishCommand.php">
+    <InvalidArgument>
+      <code><![CDATA[new ScheduledBackgroundTaskFinished($this, $event)]]></code>
+    </InvalidArgument>
+  </file>
+  <file src="src/Command/ScheduleRunCommand.php">
+    <InvalidArgument>
+      <code><![CDATA[new ScheduledTaskFailed($this, $event, $e)]]></code>
+      <code><![CDATA[new ScheduledTaskFinished($this, $event, $runtime)]]></code>
+      <code><![CDATA[new ScheduledTaskSkipped($event)]]></code>
+      <code><![CDATA[new ScheduledTaskStarting($this, $event)]]></code>
+    </InvalidArgument>
+  </file>
+  <file src="src/Command/ScheduleWorkCommand.php">
+    <UndefinedConstant>
+      <code><![CDATA[SIGINT]]></code>
+      <code><![CDATA[SIGTERM]]></code>
+    </UndefinedConstant>
+  </file>
+  <file src="src/Event.php">
+    <InvalidArgument>
+      <code><![CDATA[new \Scheduling\Event\ScheduledTaskSkipped($this)]]></code>
+    </InvalidArgument>
+  </file>
+</files>

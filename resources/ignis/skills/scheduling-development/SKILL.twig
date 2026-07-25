@@ -1,0 +1,82 @@
+---
+name: scheduling-development
+description: "Task scheduling with crustum/cakephp-scheduling. Activates when registering Schedule on Application.buildContainer; frequencies; withoutOverlapping/onOneServer; schedule run/list; SignalHandler requirement; Plugin Manifest install; monitoring; or CakePHP cron-in-PHP."
+license: MIT
+metadata:
+  author: crustum
+---
+# CakePHP Scheduling
+
+## Documentation First
+
+Prefer Scheduling `docs/index.md`, `Installation.md`, and `API-Reference.md`. There is no Ignis `search-docs` tool.
+
+## Installation
+
+```bash
+composer require crustum/cakephp-scheduling
+```
+
+Load Scheduling **and** SignalHandler (required):
+
+```php
+$this->addPlugin(\Crustum\Scheduling\SchedulingPlugin::class);
+$this->addPlugin(\SignalHandler\SignalHandlerPlugin::class);
+```
+
+Publish config, migrations, and bootstrap load:
+
+```bash
+{{ assist.cakeCommand('manifest install --plugin Crustum/Scheduling') }}
+```
+
+That creates `config/scheduling.php` (copy-safe), copies monitoring migrations, and appends `Configure::load('scheduling')` to bootstrap. Then migrate as needed.
+
+## Defining Schedules
+
+@ignissnippet("Register Schedule", "php")
+use Cake\Event\EventManager;
+use Crustum\Scheduling\Schedule;
+
+EventManager::instance()->on('Application.buildContainer', function ($event): void {
+    $schedule = $event->getData('container')->get(Schedule::class);
+
+    $schedule->command('logs archive')->everyHour();
+    $schedule->command('reports generate')->dailyAt('02:00');
+    $schedule->call(fn () => null)->everyThirtySeconds();
+});
+@endignissnippet
+
+Also: `$schedule->exec(...)`, invokable objects, `weekly()->mondays()->at(...)`, `withoutOverlapping()`, `onOneServer()`, timezones — see API reference.
+
+## Running
+
+```bash
+{{ assist.cakeCommand('schedule list') }}
+{{ assist.cakeCommand('schedule run') }}
+{{ assist.cakeCommand('schedule test') }}
+```
+
+Production: one cron entry invoking `schedule run` every minute (adjust for sub-minute tasks per docs). Local continuous runner: `schedule work` when documented. Pause/resume, background tasks, schedule groups, per-task timezones — see docs / API-Reference.
+
+## Monitoring
+
+Manifest publishes monitoring migrations/tables. Sync/prune/list monitoring commands and Rhythm widget — see docs Monitoring. Task output, hooks, and events: `docs/Integration.md`.
+
+## Testing
+
+No `src/TestSuite` assert trait. Use CLI:
+
+- `schedule list` — registered tasks
+- `schedule test "…"` — run a single expression/task safely (Integration.md)
+- `schedule run` in controlled environments
+
+Prefer Integration.md over inventing fake Schedule APIs in Pest.
+
+## Common Pitfalls
+
+- Skipping `manifest install` — no app `config/scheduling.php` / published migrations.
+- Missing SignalHandler — graceful stop broken.
+- No cron — schedules never fire.
+- Overlapping heavy jobs — use `withoutOverlapping()`.
+- Sub-minute schedules with a once-per-minute cron only — follow docs for the right runner cadence.

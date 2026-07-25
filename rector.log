@@ -1,0 +1,1850 @@
+
+c:\projects\_demo_db\testqa\plugins\Scheduling>composer82 rector-f
+ 66/66 [============================] 100%
+39 files with changes
+=====================
+
+1) src/CacheEventMutex.php:35
+
+    ---------- begin diff ----------
+@@ Line 35 @@
+             return false;
+         }
+
+-        $result = Cache::write($key, time(), $this->store);
+-
+-        return $result;
++        return Cache::write($key, time(), $this->store);
+     }
+
+     /**
+    ----------- end diff -----------
+
+Applied rules:
+ * SimplifyUselessVariableRector
+
+
+2) src/CallbackEvent.php:76
+
+    ---------- begin diff ----------
+@@ Line 76 @@
+     {
+         parent::run();
+
+-        if ($this->exception) {
++        if ($this->exception instanceof \Throwable) {
+             throw $this->exception;
+         }
+     }
+@@ Line 94 @@
+     /**
+      * Indicate that the callback should run in the background.
+      *
+-     * @return $this
+      * @throws \RuntimeException
+      */
+-    public function runInBackground()
++    public function runInBackground(): never
+     {
+         throw new RuntimeException('Scheduled closures can not be run in the background.');
+     }
+@@ Line 114 @@
+                 if (!is_callable($this->callback)) {
+                     throw new \LogicException('Object callback is not callable.');
+                 }
++
+                 $this->result = call_user_func_array($this->callback, $this->parameters);
+             } else {
+                 if (!is_callable($this->callback)) {
+                     throw new \LogicException('Callback is not callable.');
+                 }
++
+                 $this->result = call_user_func_array($this->callback, $this->parameters);
+             }
+
+             return $this->result === false ? 1 : 0;
+-        } catch (Throwable $e) {
+-            $this->exception = $e;
++        } catch (Throwable $throwable) {
++            $this->exception = $throwable;
+
+             return 1;
+         }
+    ----------- end diff -----------
+
+Applied rules:
+ * ObjectExplicitBoolCompareRector
+ * CatchExceptionNameMatchingTypeRector
+ * NewlineAfterStatementRector
+ * RemoveReturnTagIncompatibleWithNativeTypeRector
+ * ReturnNeverTypeRector
+
+
+3) src/Command/ScheduleClearCacheCommand.php:75
+
+    ---------- begin diff ----------
+@@ Line 75 @@
+             $io->success('Scheduler mutex cache cleared successfully.');
+
+             return static::CODE_SUCCESS;
+-        } catch (\Throwable $e) {
+-            $io->error(sprintf('Failed to clear cache: %s', $e->getMessage()));
++        } catch (\Throwable $throwable) {
++            $io->error(sprintf('Failed to clear cache: %s', $throwable->getMessage()));
+
+             return static::CODE_ERROR;
+         }
+@@ Line 109 @@
+     protected function clearMutexesByPattern(string $store, string $pattern, ConsoleIo $io): void
+     {
+         $engine = Cache::pool($store);
+-        $clearedCount = 0;
+
+         $io->info(sprintf('Clearing mutexes matching pattern: %s', $pattern));
+         $io->warning('Pattern-based clearing is not fully implemented in this version.');
+    ----------- end diff -----------
+
+Applied rules:
+ * CatchExceptionNameMatchingTypeRector
+ * RemoveUnusedVariableAssignRector
+
+
+4) src/Command/ScheduleFinishCommand.php:63
+
+    ---------- begin diff ----------
+@@ Line 63 @@
+         $schedule = $this->getSchedule();
+         $events = $schedule->events();
+
+-        $matchingEvents = array_filter($events, function ($event) use ($mutexName) {
+-            return $event->mutexName() === $mutexName;
+-        });
++        $matchingEvents = array_filter($events, fn($event): bool => $event->mutexName() === $mutexName);
+
+         foreach ($matchingEvents as $event) {
+             $event->finish($exitCode);
+    ----------- end diff -----------
+
+Applied rules:
+ * ClosureToArrowFunctionRector
+ * ClosureReturnTypeRector
+
+
+5) src/Command/ScheduleMonitorListCommand.php:58
+
+    ---------- begin diff ----------
+@@ Line 58 @@
+             /** @var \Crustum\Scheduling\Model\Table\MonitoredScheduledTasksTable $MonitoredTasks */
+             $MonitoredTasks = TableRegistry::getTableLocator()->get('Crustum/Scheduling.MonitoredScheduledTasks');
+             $query = $MonitoredTasks->find()
+-                ->contain(['MonitoredScheduledTaskLogItems' => function ($q) {
+-                    return $q->orderByDesc('created')->limit(1);
+-                }]);
++                ->contain(['MonitoredScheduledTaskLogItems' => fn($q) => $q->orderByDesc('created')->limit(1)]);
+
+             $status = $args->getOption('status');
+             if ($status) {
+@@ Line 117 @@
+             ));
+
+             return static::CODE_SUCCESS;
+-        } catch (\Exception $e) {
+-            $io->error(sprintf('Error listing tasks: %s', $e->getMessage()));
++        } catch (\Exception $exception) {
++            $io->error(sprintf('Error listing tasks: %s', $exception->getMessage()));
+
+             return static::CODE_ERROR;
+         }
+@@ Line 152 @@
+                 $statusInfo['cron_expression'],
+             ];
+         }
++
+         $io->helper('Table')->output($rows);
+     }
+    ----------- end diff -----------
+
+Applied rules:
+ * CatchExceptionNameMatchingTypeRector
+ * NewlineAfterStatementRector
+ * ClosureToArrowFunctionRector
+
+
+6) src/Command/ScheduleMonitorSyncCommand.php:74
+
+    ---------- begin diff ----------
+@@ Line 74 @@
+             }
+
+             return static::CODE_SUCCESS;
+-        } catch (\Exception $e) {
+-            $io->error(sprintf('Error syncing schedule: %s', $e->getMessage()));
++        } catch (\Exception $exception) {
++            $io->error(sprintf('Error syncing schedule: %s', $exception->getMessage()));
+
+             return static::CODE_ERROR;
+         }
+    ----------- end diff -----------
+
+Applied rules:
+ * CatchExceptionNameMatchingTypeRector
+
+
+7) src/Command/ScheduleRunCommand.php:70
+
+    ---------- begin diff ----------
+@@ Line 70 @@
+             Schedule::clearInterruptSignal();
+         }
+
+-        if (empty($dueEvents)) {
++        if ($dueEvents === []) {
+             if ($verbose) {
+                 $io->info('No scheduled events are due to run.');
+             }
+@@ Line 86 @@
+         try {
+             $service = new ScheduleMonitorService($schedule);
+             $service->syncMonitoredTasks();
+-        } catch (\Exception $e) {
++        } catch (\Exception) {
+         }
+
+         $paused = Schedule::isPaused();
+@@ Line 110 @@
+                 if ($verbose) {
+                     $io->info(sprintf('Skipping [%s] because the command already ran on another server.', $event->getSummaryForDisplay()));
+                 }
++
+                 continue;
+             }
+
+@@ Line 118 @@
+             }
+         }
+
+-        $repeatableEvents = array_filter($dueEvents, function ($event) {
+-            return $event->isRepeatable();
+-        });
++        $repeatableEvents = array_filter($dueEvents, fn($event) => $event->isRepeatable());
+
+         if ($verbose) {
+             $io->info(sprintf('Found %d repeatable events out of %d total events', count($repeatableEvents), count($dueEvents)));
+         }
+
+-        if (!empty($repeatableEvents)) {
++        if ($repeatableEvents !== []) {
+             $this->repeatEvents($repeatableEvents, $io, $verbose);
+         }
+
+@@ Line 171 @@
+             }
+
+             return true;
+-        } catch (\Throwable $e) {
+-            $this->dispatchSchedulerEvent(new ScheduledTaskFailed($this, $event, $e));
++        } catch (\Throwable $throwable) {
++            $this->dispatchSchedulerEvent(new ScheduledTaskFailed($this, $event, $throwable));
+
+-            $io->error(sprintf('Failed to run scheduled command: %s - %s', $summary, $e->getMessage()));
++            $io->error(sprintf('Failed to run scheduled command: %s - %s', $summary, $throwable->getMessage()));
+
+             return false;
+         }
+@@ Line 204 @@
+                 count($events),
+                 $endOfMinute->format('H:i:s')
+             ));
+-        }
+-
+-        if ($verbose) {
+             foreach ($events as $event) {
+                 $io->info(sprintf('  - %s (repeat every %ds)', $event->getSummaryForDisplay(), $event->repeatSeconds));
+             }
+@@ Line 238 @@
+                     if ($verbose) {
+                         $io->info(sprintf('Skipping repeatable [%s] - overlapping execution.', $event->getSummaryForDisplay()));
+                     }
++
+                     continue;
+                 }
+
+@@ Line 245 @@
+                     if ($verbose) {
+                         $io->info(sprintf('Skipping repeatable [%s] - other filters did not pass.', $event->getSummaryForDisplay()));
+                     }
++
+                     continue;
+                 }
+
+@@ Line 254 @@
+                         if ($verbose) {
+                             $io->info(sprintf('Skipping repeatable [%s] because the command already ran on another server.', $event->getSummaryForDisplay()));
+                         }
++
+                         continue;
+                     }
+                 }
+    ----------- end diff -----------
+
+Applied rules:
+ * SimplifyEmptyCheckOnEmptyArrayRector
+ * CatchExceptionNameMatchingTypeRector
+ * NewlineAfterStatementRector
+ * RemoveNextSameValueConditionRector
+ * ClosureToArrowFunctionRector
+ * RemoveUnusedVariableInCatchRector
+
+
+8) src/Command/ScheduleTestCommand.php:65
+
+    ---------- begin diff ----------
+@@ Line 65 @@
+         $schedule = $this->getSchedule();
+         $events = $schedule->events();
+
+-        if (empty($events)) {
++        if ($events === []) {
+             $io->error('No scheduled events are defined.');
+
+             return static::CODE_ERROR;
+@@ Line 126 @@
+             $io->success(sprintf('Command executed successfully in %sms.', $runtime));
+
+             return static::CODE_SUCCESS;
+-        } catch (\Throwable $e) {
+-            $io->error(sprintf('Command failed: %s', $e->getMessage()));
++        } catch (\Throwable $throwable) {
++            $io->error(sprintf('Command failed: %s', $throwable->getMessage()));
+
+             if ($verbose) {
+                 $io->out('');
+                 $io->out('Stack trace:');
+-                $io->out($e->getTraceAsString());
++                $io->out($throwable->getTraceAsString());
+             }
+
+             return static::CODE_ERROR;
+    ----------- end diff -----------
+
+Applied rules:
+ * SimplifyEmptyCheckOnEmptyArrayRector
+ * CatchExceptionNameMatchingTypeRector
+
+
+9) src/Command/ScheduleWorkCommand.php:103
+
+    ---------- begin diff ----------
+@@ Line 103 @@
+             if ($verbose) {
+                 $io->info('Synced monitored tasks');
+             }
+-        } catch (\Exception $e) {
+-            $io->warning(sprintf('Failed to sync monitored tasks: %s', $e->getMessage()));
++        } catch (\Exception $exception) {
++            $io->warning(sprintf('Failed to sync monitored tasks: %s', $exception->getMessage()));
+         }
+
+         $lastExecutionStartedAt = \Cake\Chronos\Chronos::now()->subMinutes(10);
+@@ Line 176 @@
+             Schedule::clearInterruptSignal();
+         }
+
+-        if (empty($dueEvents)) {
++        if ($dueEvents === []) {
+             if ($verbose) {
+                 $io->info('No scheduled events are due to run.');
+             }
+@@ Line 200 @@
+                 if ($verbose) {
+                     $io->info(sprintf('Skipping [%s] - scheduler is paused.', $event->getSummaryForDisplay()));
+                 }
++
+                 continue;
+             }
+
+@@ Line 207 @@
+                 if ($verbose) {
+                     $io->info(sprintf('Skipping [%s] - filters did not pass.', $event->getSummaryForDisplay()));
+                 }
++
+                 continue;
+             }
+
+@@ Line 214 @@
+                 if ($verbose) {
+                     $io->info(sprintf('Skipping [%s] because the command already ran on another server.', $event->getSummaryForDisplay()));
+                 }
++
+                 continue;
+             }
+
+@@ Line 220 @@
+             $this->runEvent($event, $io, $verbose);
+         }
+
+-        $repeatableEvents = array_filter($dueEvents, function ($event) {
+-            return $event->isRepeatable();
+-        });
++        $repeatableEvents = array_filter($dueEvents, fn($event) => $event->isRepeatable());
+
+         if ($verbose) {
+             $io->info(sprintf('Found %d repeatable events out of %d total events', count($repeatableEvents), count($dueEvents)));
+         }
+
+-        if (!empty($repeatableEvents)) {
++        if ($repeatableEvents !== []) {
+             $this->repeatEvents($repeatableEvents, $io, $verbose);
+         }
+
+@@ Line 263 @@
+                 count($events),
+                 $endOfMinute->format('H:i:s')
+             ));
+-        }
+-
+-        if ($verbose) {
+             foreach ($events as $event) {
+                 $io->info(sprintf('  - %s (repeat every %ds)', $event->getSummaryForDisplay(), $event->repeatSeconds));
+             }
+@@ Line 296 @@
+                     if ($verbose) {
+                         $io->info(sprintf('Skipping repeatable [%s] - overlapping execution.', $event->getSummaryForDisplay()));
+                     }
++
+                     continue;
+                 }
+
+@@ Line 303 @@
+                     if ($verbose) {
+                         $io->info(sprintf('Skipping repeatable [%s] - other filters did not pass.', $event->getSummaryForDisplay()));
+                     }
++
+                     continue;
+                 }
+
+@@ Line 312 @@
+                         if ($verbose) {
+                             $io->info(sprintf('Skipping repeatable [%s] because the command already ran on another server.', $event->getSummaryForDisplay()));
+                         }
++
+                         continue;
+                     }
+                 }
+@@ Line 357 @@
+             if ($verbose) {
+                 $io->success(sprintf('Successfully ran scheduled command: %s (%sms)', $summary, $runtime));
+             }
+-        } catch (\Throwable $e) {
+-            $io->error(sprintf('Failed to run scheduled command: %s - %s', $summary, $e->getMessage()));
++        } catch (\Throwable $throwable) {
++            $io->error(sprintf('Failed to run scheduled command: %s - %s', $summary, $throwable->getMessage()));
+         }
+     }
+
+@@ Line 373 @@
+     {
+         $io->out('');
+         $io->info('Received termination signal. Stopping scheduler worker...');
++
+         $this->isRunning = false;
+     }
+ }
+    ----------- end diff -----------
+
+Applied rules:
+ * SimplifyEmptyCheckOnEmptyArrayRector
+ * CatchExceptionNameMatchingTypeRector
+ * NewlineBeforeNewAssignSetRector
+ * NewlineAfterStatementRector
+ * RemoveNextSameValueConditionRector
+ * ClosureToArrowFunctionRector
+
+
+10) src/CronExpressionTimezoneConverter.php:187
+
+    ---------- begin diff ----------
+@@ Line 187 @@
+         }
+
+         $shifted = array_map(
+-            static function (string $value) use ($offset, $mod, $min): int {
+-                return (((int)$value + $offset - $min) % $mod + $mod) % $mod + $min;
+-            },
++            static fn(string $value): int => (((int)$value + $offset - $min) % $mod + $mod) % $mod + $min,
+             explode(',', $field)
+         );
+    ----------- end diff -----------
+
+Applied rules:
+ * ClosureToArrowFunctionRector
+
+
+11) src/Event.php:207
+
+    ---------- begin diff ----------
+@@ Line 207 @@
+             return false;
+         }
+
+-        if ($this->lastChecked === null) {
++        if (!$this->lastChecked instanceof \Cake\Chronos\Chronos) {
+             return true;
+         }
+
+@@ Line 226 @@
+             $this->callBeforeCallbacks();
+
+             return $this->execute();
+-        } catch (Throwable $exception) {
++        } catch (Throwable $throwable) {
+             $this->removeMutex();
+
+-            throw $exception;
++            throw $throwable;
+         }
+     }
+
+@@ Line 429 @@
+      */
+     protected function shouldRepeat(): bool
+     {
+-        if ($this->lastChecked === null) {
++        if (!$this->lastChecked instanceof \Cake\Chronos\Chronos) {
+             return true;
+         }
+
+@@ Line 471 @@
+      * @param callable $callback The callback
+      * @return $this
+      */
+-    public function before(callable $callback)
++    public function before(callable $callback): static
+     {
+         $this->beforeCallbacks[] = $callback;
+
+@@ Line 495 @@
+      * @param callable $callback The callback
+      * @return $this
+      */
+-    public function then(callable $callback)
++    public function then(callable $callback): static
+     {
+         $this->afterCallbacks[] = $callback;
+
+@@ Line 580 @@
+     public function mutexName(): string
+     {
+         return 'schedule-' .
+-            sha1($this->expression . $this->normalizeCommand($this->command ?? ''));
++            sha1($this->expression . static::normalizeCommand($this->command ?? ''));
+     }
+
+     /**
+    ----------- end diff -----------
+
+Applied rules:
+ * FlipTypeControlToUseExclusiveTypeRector
+ * CatchExceptionNameMatchingTypeRector
+ * ThisCallOnStaticMethodToStaticCallRector
+ * ReturnTypeFromStrictFluentReturnRector
+
+
+12) src/Event/SchedulePaused.php:22
+
+    ---------- begin diff ----------
+@@ Line 22 @@
+      */
+     public function __construct(BaseSchedulerCommand $subject)
+     {
+-        parent::__construct('Scheduling.SchedulePaused', $subject, []);
++        parent::__construct('Scheduling.SchedulePaused', $subject);
+     }
+ }
+    ----------- end diff -----------
+
+Applied rules:
+ * RemoveArgumentFromDefaultParentCallRector
+
+
+13) src/Event/ScheduleResumed.php:22
+
+    ---------- begin diff ----------
+@@ Line 22 @@
+      */
+     public function __construct(BaseSchedulerCommand $subject)
+     {
+-        parent::__construct('Scheduling.ScheduleResumed', $subject, []);
++        parent::__construct('Scheduling.ScheduleResumed', $subject);
+     }
+ }
+    ----------- end diff -----------
+
+Applied rules:
+ * RemoveArgumentFromDefaultParentCallRector
+
+
+14) src/Listener/ScheduleMonitorListener.php:173
+
+    ---------- begin diff ----------
+@@ Line 173 @@
+         if (is_object($task) && method_exists($task, 'getCommand')) {
+             try {
+                 $command = $task->getCommand();
+-            } catch (\LogicException $e) {
++            } catch (\LogicException) {
+                 $command = null;
+             }
+         }
+    ----------- end diff -----------
+
+Applied rules:
+ * RemoveUnusedVariableInCatchRector
+
+
+15) src/ManageAttributesTrait.php:29
+
+    ---------- begin diff ----------
+@@ Line 29 @@
+      *
+      * @var \DateTimeZone|string|null
+      */
+-    public $timezone = null;
++    public $timezone;
+
+     /**
+      * The user the command should run as.
+@@ Line 229 @@
+      */
+     public function when($callback)
+     {
+-        $this->filters[] = is_callable($callback) ? $callback : function () use ($callback) {
+-            return $callback;
+-        };
++        $this->filters[] = is_callable($callback) ? $callback : (fn() => $callback);
+
+         return $this;
+     }
+@@ Line 244 @@
+      */
+     public function skip($callback)
+     {
+-        $this->rejects[] = is_callable($callback) ? $callback : function () use ($callback) {
+-            return $callback;
+-        };
++        $this->rejects[] = is_callable($callback) ? $callback : (fn() => $callback);
+
+         return $this;
+     }
+    ----------- end diff -----------
+
+Applied rules:
+ * RemoveNullPropertyInitializationRector
+ * ClosureToArrowFunctionRector
+
+
+16) src/ManageFrequenciesTrait.php:61
+
+    ---------- begin diff ----------
+@@ Line 61 @@
+     {
+         $now = Chronos::now();
+
+-        return function () use ($startTime, $endTime, $now) {
++        return function () use ($startTime, $endTime, $now): bool {
+             $current = $now;
+
+             if ($this->timezone) {
+@@ Line 599 @@
+                 if (!is_int($day)) {
+                     throw new InvalidArgumentException('daysOfMonth() expects int days or a single int array.');
+                 }
++
+                 $normalizedDays[] = $day;
+             }
+         }
+    ----------- end diff -----------
+
+Applied rules:
+ * NewlineAfterStatementRector
+ * ClosureReturnTypeRector
+
+
+17) tests/TestCase/Command/ScheduleMonitorListCommandTest.php:17
+
+    ---------- begin diff ----------
+@@ Line 17 @@
+         parent::setUp();
+         $this->setAppNamespace();
+         $this->configApplication(
+-            'TestApp\Application',
++            \TestApp\Application::class,
+             [PLUGIN_TESTS . 'TestApp' . DS . 'config'],
+         );
+     }
+    ----------- end diff -----------
+
+Applied rules:
+ * StringClassNameToClassConstantRector
+
+
+18) tests/TestCase/Command/ScheduleMonitorSyncCommandTest.php:17
+
+    ---------- begin diff ----------
+@@ Line 17 @@
+         parent::setUp();
+         $this->setAppNamespace();
+         $this->configApplication(
+-            'TestApp\Application',
++            \TestApp\Application::class,
+             [PLUGIN_TESTS . 'TestApp' . DS . 'config'],
+         );
+     }
+@@ Line 26 @@
+     {
+         $schedule = new Schedule();
+         $schedule->command('test:command')->everyMinute()->useMonitoring()->monitorName('test-command');
+-        $this->mockService(Schedule::class, function () use ($schedule) {
+-            return $schedule;
+-        });
++        $this->mockService(Schedule::class, fn(): \Crustum\Scheduling\Schedule => $schedule);
+
+         $this->exec('schedule monitor sync');
+
+@@ Line 41 @@
+     {
+         $schedule = new Schedule();
+         $schedule->command('test:command')->everyMinute()->useMonitoring()->monitorName('test-command');
+-        $this->mockService(Schedule::class, function () use ($schedule) {
+-            return $schedule;
+-        });
++        $this->mockService(Schedule::class, fn(): \Crustum\Scheduling\Schedule => $schedule);
+
+         $this->exec('schedule monitor sync');
+
+@@ Line 59 @@
+     {
+         $schedule = new Schedule();
+         $schedule->command('test:command')->everyMinute()->useMonitoring()->monitorName('test-command');
+-        $this->mockService(Schedule::class, function () use ($schedule) {
+-            return $schedule;
+-        });
++        $this->mockService(Schedule::class, fn(): \Crustum\Scheduling\Schedule => $schedule);
+
+         $this->exec('schedule monitor sync --dry-run');
+
+@@ Line 84 @@
+
+         $schedule = new Schedule();
+         $schedule->command('test:command')->daily()->useMonitoring()->monitorName($taskName);
+-        $this->mockService(Schedule::class, function () use ($schedule) {
+-            return $schedule;
+-        });
++        $this->mockService(Schedule::class, fn(): \Crustum\Scheduling\Schedule => $schedule);
+
+         $this->exec('schedule monitor sync');
+
+@@ Line 110 @@
+
+         $schedule = new Schedule();
+         $schedule->command('test:command')->everyMinute()->useMonitoring()->monitorName('test-command');
+-        $this->mockService(Schedule::class, function () use ($schedule) {
+-            return $schedule;
+-        });
++        $this->mockService(Schedule::class, fn(): \Crustum\Scheduling\Schedule => $schedule);
+
+         $this->exec('schedule monitor sync');
+    ----------- end diff -----------
+
+Applied rules:
+ * StringClassNameToClassConstantRector
+ * ClosureToArrowFunctionRector
+ * ClosureReturnTypeRector
+
+
+19) tests/TestCase/Command/SchedulePauseResumeCommandTest.php:17
+
+    ---------- begin diff ----------
+@@ Line 17 @@
+         parent::setUp();
+         $this->setAppNamespace();
+         $this->configApplication(
+-            'TestApp\Application',
++            \TestApp\Application::class,
+             [PLUGIN_TESTS . 'TestApp' . DS . 'config'],
+         );
+
+@@ Line 88 @@
+             $ran = true;
+         })->everyMinute();
+
+-        $this->mockService(Schedule::class, function () use ($schedule) {
+-            return $schedule;
+-        });
++        $this->mockService(Schedule::class, fn(): \Crustum\Scheduling\Schedule => $schedule);
+
+         $this->exec('schedule run -v');
+         $this->assertExitSuccess();
+@@ Line 102 @@
+             $ranWhenPaused = true;
+         })->everyMinute()->evenWhenPaused();
+
+-        $this->mockService(Schedule::class, function () use ($schedule2) {
+-            return $schedule2;
+-        });
++        $this->mockService(Schedule::class, fn(): \Crustum\Scheduling\Schedule => $schedule2);
+
+         $this->exec('schedule run -v');
+         $this->assertExitSuccess();
+    ----------- end diff -----------
+
+Applied rules:
+ * StringClassNameToClassConstantRector
+ * ClosureToArrowFunctionRector
+ * ClosureReturnTypeRector
+
+
+20) tests/TestCase/Command/ScheduleRunCommandTest.php:17
+
+    ---------- begin diff ----------
+@@ Line 17 @@
+         parent::setUp();
+         $this->setAppNamespace();
+         $this->configApplication(
+-            'TestApp\Application',
++            \TestApp\Application::class,
+             [PLUGIN_TESTS . 'TestApp' . DS . 'config'],
+         );
+
+@@ Line 42 @@
+         $schedule->command('echo "test"')->everyMinute();
+
+         // Override the container to use our real schedule
+-        $this->mockService(Schedule::class, function () use ($schedule) {
+-            return $schedule;
+-        });
++        $this->mockService(Schedule::class, fn(): \Crustum\Scheduling\Schedule => $schedule);
+
+         $this->exec('schedule run -v');
+
+@@ Line 63 @@
+         $schedule->command('echo "test"')->everyMinute();
+
+         // Override the container to use our real schedule
+-        $this->mockService(Schedule::class, function () use ($schedule) {
+-            return $schedule;
+-        });
++        $this->mockService(Schedule::class, fn(): \Crustum\Scheduling\Schedule => $schedule);
+
+         $this->exec('schedule run -v');
+    ----------- end diff -----------
+
+Applied rules:
+ * StringClassNameToClassConstantRector
+ * ClosureToArrowFunctionRector
+ * ClosureReturnTypeRector
+
+
+21) tests/TestCase/EventTest.php:124
+
+    ---------- begin diff ----------
+@@ Line 124 @@
+     public function testEventFiltersPreventExecution(): void
+     {
+         $event = $this->createEvent('php -v');
+-        $event->when(function () {
++        $event->when(function (): false {
+             return false; // Never run
+         });
+
+@@ Line 134 @@
+     public function testEventFiltersAllowExecution(): void
+     {
+         $event = $this->createEvent('php -v');
+-        $event->when(function () {
+-            return true;
+-        });
++        $event->when(fn(): true => true);
+
+         $this->assertTrue($event->filtersPass());
+     }
+@@ Line 153 @@
+     public function testWhenWithCallable(): void
+     {
+         $event = $this->createEvent('php -v');
+-        $result = $event->when(function () {
+-            return true;
+-        });
++        $result = $event->when(fn(): true => true);
+
+         $this->assertSame($event, $result);
+         $this->assertTrue($event->filtersPass());
+@@ Line 180 @@
+     public function testWhenWithMultipleFilters(): void
+     {
+         $event = $this->createEvent('php -v');
+-        $event->when(function () {
+-            return true;
+-        });
+-        $event->when(function () {
+-            return true;
+-        });
++        $event->when(fn(): true => true);
++        $event->when(fn(): true => true);
+
+         $this->assertTrue($event->filtersPass());
+     }
+@@ Line 193 @@
+     public function testWhenWithMultipleFiltersOneFails(): void
+     {
+         $event = $this->createEvent('php -v');
+-        $event->when(function () {
+-            return true;
+-        });
+-        $event->when(function () {
+-            return false;
+-        });
++        $event->when(fn(): true => true);
++        $event->when(fn(): false => false);
+
+         $this->assertFalse($event->filtersPass());
+     }
+@@ Line 206 @@
+     public function testSkipWithCallable(): void
+     {
+         $event = $this->createEvent('php -v');
+-        $result = $event->skip(function () {
+-            return false;
+-        });
++        $result = $event->skip(fn(): false => false);
+
+         $this->assertSame($event, $result);
+         $this->assertTrue($event->filtersPass());
+@@ Line 217 @@
+     public function testSkipWithCallableReturningTrue(): void
+     {
+         $event = $this->createEvent('php -v');
+-        $event->skip(function () {
+-            return true;
+-        });
++        $event->skip(fn(): true => true);
+
+         $this->assertFalse($event->filtersPass());
+     }
+@@ Line 318 @@
+     public function testFiltersPassWithWhenAndSkip(): void
+     {
+         $event = $this->createEvent('php -v');
+-        $event->when(function () {
+-            return true;
+-        });
+-        $event->skip(function () {
+-            return false;
+-        });
++        $event->when(fn(): true => true);
++        $event->skip(fn(): false => false);
+
+         $this->assertTrue($event->filtersPass());
+     }
+@@ Line 331 @@
+     public function testFiltersPassWithWhenAndSkipRejecting(): void
+     {
+         $event = $this->createEvent('php -v');
+-        $event->when(function () {
+-            return true;
+-        });
+-        $event->skip(function () {
+-            return true;
+-        });
++        $event->when(fn(): true => true);
++        $event->skip(fn(): true => true);
+
+         $this->assertFalse($event->filtersPass());
+     }
+    ----------- end diff -----------
+
+Applied rules:
+ * ClosureToArrowFunctionRector
+ * ClosureReturnTypeRector
+
+
+22) tests/TestCase/FrequencyTest.php:124
+
+    ---------- begin diff ----------
+@@ Line 124 @@
+
+         $this->assertSame('0 0 31 * *', $this->event->lastDayOfMonth()->getExpression());
+
+-        \Cake\Chronos\Chronos::setTestNow(null);
++        \Cake\Chronos\Chronos::setTestNow();
+     }
+
+     public function testTwiceMonthly(): void
+@@ Line 149 @@
+
+         $reflection = new \ReflectionClass($this->event);
+         $method = $reflection->getMethod('repeatEvery');
+-        $method->setAccessible(true);
+         $method->invoke($this->event, 0);
+     }
+    ----------- end diff -----------
+
+Applied rules:
+ * RemoveNullArgOnNullDefaultParamRector
+ * RemoveReflectionSetAccessibleCallsRector
+
+
+23) tests/TestCase/Listener/ScheduleMonitorListenerTest.php:18
+
+    ---------- begin diff ----------
+@@ Line 18 @@
+ class ScheduleMonitorListenerTest extends TestCase
+ {
+     protected ScheduleMonitorListener $listener;
++
+     protected EventManager $eventManager;
+
+     protected function setUp(): void
+    ----------- end diff -----------
+
+Applied rules:
+ * NewlineBetweenClassLikeStmtsRector
+
+
+24) tests/TestCase/Model/Table/MonitoredScheduledTasksTableTest.php:20
+
+    ---------- begin diff ----------
+@@ Line 20 @@
+
+         $this->table = TableRegistry::getTableLocator()->get('Crustum/Scheduling.MonitoredScheduledTasks');
+         $this->table->deleteAll([]);
++
+         $logTable = TableRegistry::getTableLocator()->get('Crustum/Scheduling.MonitoredScheduledTaskLogItems');
+         $logTable->deleteAll([]);
+     }
+    ----------- end diff -----------
+
+Applied rules:
+ * NewlineBeforeNewAssignSetRector
+
+
+25) tests/TestCase/PendingEventAttributesTest.php:12
+
+    ---------- begin diff ----------
+@@ Line 12 @@
+ class PendingEventAttributesTest extends TestCase
+ {
+     protected Schedule $schedule;
++
+     protected PendingEventAttributes $attributes;
+
+     protected function setUp(): void
+@@ Line 129 @@
+         $mutex = new CacheEventMutex();
+         $event = new Event($mutex, 'test:command');
+
+-        $this->attributes->when(function () {
+-            return true;
+-        });
++        $this->attributes->when(fn(): true => true);
+
+         $this->attributes->mergeAttributes($event);
+
+@@ Line 143 @@
+         $mutex = new CacheEventMutex();
+         $event = new Event($mutex, 'test:command');
+
+-        $this->attributes->skip(function () {
+-            return true;
+-        });
++        $this->attributes->skip(fn(): true => true);
+
+         $this->attributes->mergeAttributes($event);
+    ----------- end diff -----------
+
+Applied rules:
+ * NewlineBetweenClassLikeStmtsRector
+ * ClosureToArrowFunctionRector
+ * ClosureReturnTypeRector
+
+
+26) tests/TestCase/ScheduleTest.php:50
+
+    ---------- begin diff ----------
+@@ Line 50 @@
+         $schedule = $this->createSchedule();
+         $event1 = $schedule->command('php -v')->daily();
+         $event1->repeatSeconds = 10;
+-        $event2 = $schedule->command('php -m')->daily();
++        $schedule->command('php -m')->daily();
+
+         $events = $schedule->events();
+
+@@ Line 74 @@
+     public function testScheduleHandlesCallbackEvents(): void
+     {
+         $schedule = $this->createSchedule();
+-        $callback = function () {
+-            return 'test result';
+-        };
++        $callback = (fn(): string => 'test result');
+
+         $event = $schedule->call($callback);
+    ----------- end diff -----------
+
+Applied rules:
+ * RemoveUnusedVariableAssignRector
+ * ClosureToArrowFunctionRector
+ * ClosureReturnTypeRector
+
+
+27) tests/TestCase/Service/ScheduleMonitorServiceTest.php:12
+
+    ---------- begin diff ----------
+@@ Line 12 @@
+ class ScheduleMonitorServiceTest extends TestCase
+ {
+     protected Schedule $schedule;
++
+     protected ScheduleMonitorService $service;
+
+     protected function setUp(): void
+@@ Line 142 @@
+
+     public function testSyncMonitoredTasksGeneratesNameForCallbacksWithoutName(): void
+     {
+-        $this->schedule->call(function () {
+-            return true;
+-        })->everyMinute()->useMonitoring();
++        $this->schedule->call(fn(): true => true)->everyMinute()->useMonitoring();
+
+         $result = $this->service->syncMonitoredTasks();
+
+@@ Line 226 @@
+     public function testSyncMonitoredTasksHandlesCallbackEvents(): void
+     {
+         $taskName = 'test-callback-' . uniqid();
+-        $this->schedule->call(function () {
+-            return true;
+-        })->everyMinute()->useMonitoring()->monitorName($taskName);
++        $this->schedule->call(fn(): true => true)->everyMinute()->useMonitoring()->monitorName($taskName);
+
+         $result = $this->service->syncMonitoredTasks();
+    ----------- end diff -----------
+
+Applied rules:
+ * NewlineBetweenClassLikeStmtsRector
+ * ClosureToArrowFunctionRector
+ * ClosureReturnTypeRector
+
+
+28) src/Model/Entity/MonitoredScheduledTaskLogItem.php:22
+
+    ---------- begin diff ----------
+@@ Line 22 @@
+      * Log item type constants.
+      */
+     public const TYPE_STARTING = 'starting';
++
+     public const TYPE_FINISHED = 'finished';
++
+     public const TYPE_FAILED = 'failed';
++
+     public const TYPE_SKIPPED = 'skipped';
+
+     /**
+    ----------- end diff -----------
+
+Applied rules:
+ * NewlineBetweenClassLikeStmtsRector
+
+
+29) src/Model/Table/MonitoredScheduledTaskLogItemsTable.php:141
+
+    ---------- begin diff ----------
+@@ Line 141 @@
+      */
+     public function findByTaskName(SelectQuery $query, array $options): SelectQuery
+     {
+-        return $query->matching('MonitoredScheduledTasks', function (SelectQuery $q) use ($options) {
+-            return $q->where(['MonitoredScheduledTasks.name' => $options['task_name']]);
+-        });
++        return $query->matching('MonitoredScheduledTasks', fn(SelectQuery $q) => $q->where(['MonitoredScheduledTasks.name' => $options['task_name']]));
+     }
+
+     /**
+@@ Line 267 @@
+         $query = $this->findByTask($this->find(), ['task_id' => $taskId])
+             ->where(['type' => MonitoredScheduledTaskLogItem::TYPE_FAILED]);
+
+-        if ($since) {
++        if ($since instanceof \Cake\I18n\DateTime) {
+             $query->where(['created >=' => $since]);
+         }
+
+@@ Line 286 @@
+         $query = $this->findByTask($this->find(), ['task_id' => $taskId])
+             ->where(['type' => MonitoredScheduledTaskLogItem::TYPE_FINISHED]);
+
+-        if ($since) {
++        if ($since instanceof \Cake\I18n\DateTime) {
+             $query->where(['created >=' => $since]);
+         }
+
+@@ Line 305 @@
+         $query = $this->findByTask($this->find(), ['task_id' => $taskId])
+             ->where(['type' => MonitoredScheduledTaskLogItem::TYPE_FINISHED]);
+
+-        if ($since) {
++        if ($since instanceof \Cake\I18n\DateTime) {
+             $query->where(['created >=' => $since]);
+         }
+
+         $items = $query->toArray();
+-        $runtimes = array_filter(array_map(function ($item) {
+-            return $item->getRuntime();
+-        }, $items));
++        $runtimes = array_filter(array_map(fn($item) => $item->getRuntime(), $items));
+
+-        if (empty($runtimes)) {
++        if ($runtimes === []) {
+             return null;
+         }
+    ----------- end diff -----------
+
+Applied rules:
+ * SimplifyEmptyCheckOnEmptyArrayRector
+ * ObjectExplicitBoolCompareRector
+ * ClosureToArrowFunctionRector
+
+
+30) src/Model/Table/MonitoredScheduledTasksTable.php:271
+
+    ---------- begin diff ----------
+@@ Line 271 @@
+     {
+         $existingTask = $this->find()->where(['name' => $taskData['name']])->first();
+
+-        if ($existingTask) {
+-            $task = $this->patchEntity($existingTask, $taskData);
+-        } else {
+-            $task = $this->newEntity($taskData);
+-        }
++        $task = $existingTask ? $this->patchEntity($existingTask, $taskData) : $this->newEntity($taskData);
+
+         return $this->saveOrFail($task);
+     }
+@@ Line 290 @@
+     public function markAsStarted(string $name, array $meta = []): ?MonitoredScheduledTask
+     {
+         $task = $this->getByName($name);
+-        if (!$task) {
++        if (!$task instanceof \Crustum\Scheduling\Model\Entity\MonitoredScheduledTask) {
+             return null;
+         }
+
+@@ Line 435 @@
+      */
+     protected function formatDateTime(?DateTime $datetime, ?string $format = null): string
+     {
+-        if (!$datetime) {
++        if (!$datetime instanceof \Cake\I18n\DateTime) {
+             return 'Never';
+         }
+
+@@ Line 475 @@
+     public function markAsStarting(string $taskName, array $meta = []): bool
+     {
+         $task = $this->getByName($taskName);
+-        if (!$task) {
++        if (!$task instanceof \Crustum\Scheduling\Model\Entity\MonitoredScheduledTask) {
+             return false;
+         }
+
+@@ Line 501 @@
+     public function markAsFinished(string $taskName, array $meta = []): bool
+     {
+         $task = $this->getByName($taskName);
+-        if (!$task) {
++        if (!$task instanceof \Crustum\Scheduling\Model\Entity\MonitoredScheduledTask) {
+             return false;
+         }
+
+@@ Line 527 @@
+     public function markAsFailed(string $taskName, array $meta = []): bool
+     {
+         $task = $this->getByName($taskName);
+-        if (!$task) {
++        if (!$task instanceof \Crustum\Scheduling\Model\Entity\MonitoredScheduledTask) {
+             return false;
+         }
+
+@@ Line 553 @@
+     public function markAsSkipped(string $taskName, array $meta = []): bool
+     {
+         $task = $this->getByName($taskName);
+-        if (!$task) {
++        if (!$task instanceof \Crustum\Scheduling\Model\Entity\MonitoredScheduledTask) {
+             return false;
+         }
+    ----------- end diff -----------
+
+Applied rules:
+ * ObjectExplicitBoolCompareRector
+ * SimplifyIfElseToTernaryRector
+
+
+31) src/PendingEventAttributes.php:65
+
+    ---------- begin diff ----------
+@@ Line 65 @@
+      * @param bool $releaseOnTerminationSignals Whether to release the mutex on termination signals
+      * @return $this
+      */
+-    public function withoutOverlapping(int $expiresAt = 1440, bool $releaseOnTerminationSignals = true)
++    public function withoutOverlapping(int $expiresAt = 1440, bool $releaseOnTerminationSignals = true): static
+     {
+         $this->withoutOverlapping = true;
+         $this->expiresAt = $expiresAt;
+    ----------- end diff -----------
+
+Applied rules:
+ * ReturnTypeFromStrictFluentReturnRector
+
+
+32) src/Recorder/ScheduledTasksRecorder.php:78
+
+    ---------- begin diff ----------
+@@ Line 78 @@
+                     json_encode($taskDetails, JSON_THROW_ON_ERROR),
+                     $timestamp
+                 );
+-            } catch (\Exception $e) {
+-                debug('ScheduledTasksRecorder error: ' . $e->getMessage());
++            } catch (\Exception $exception) {
++                debug('ScheduledTasksRecorder error: ' . $exception->getMessage());
+             }
+         });
+     }
+    ----------- end diff -----------
+
+Applied rules:
+ * CatchExceptionNameMatchingTypeRector
+
+
+33) src/Schedule.php:24
+
+    ---------- begin diff ----------
+@@ Line 24 @@
+      * Day constants
+      */
+     public const SUNDAY = 0;
++
+     public const MONDAY = 1;
++
+     public const TUESDAY = 2;
++
+     public const WEDNESDAY = 3;
++
+     public const THURSDAY = 4;
++
+     public const FRIDAY = 5;
++
+     public const SATURDAY = 6;
+
+     /**
+@@ Line 152 @@
+      */
+     public function command(string $command, array $parameters = []): Event
+     {
+-        if (count($parameters)) {
++        if ($parameters !== []) {
+             $command .= ' ' . $this->compileParameters($parameters);
+         }
+
+@@ Line 170 @@
+      */
+     public function exec(string $command, array $parameters = []): Event
+     {
+-        if (count($parameters)) {
++        if ($parameters !== []) {
+             $command .= ' ' . $this->compileParameters($parameters);
+         }
+
+@@ Line 190 @@
+      */
+     public function group(Closure $events): void
+     {
+-        if ($this->attributes === null) {
++        if (!$this->attributes instanceof \Crustum\Scheduling\PendingEventAttributes) {
+             throw new RuntimeException('Invoke an attribute method such as Schedule::daily() before defining a schedule group.');
+         }
+
+@@ Line 268 @@
+
+         $keyString = (string)$key;
+         if (str_starts_with($keyString, '--')) {
+-            $compiled = array_map(function ($item) use ($keyString) {
+-                return "{$keyString}={$item}";
+-            }, $compiled);
++            $compiled = array_map(fn($item): string => "{$keyString}={$item}", $compiled);
+         } elseif (str_starts_with($keyString, '-')) {
+-            $compiled = array_map(function ($item) use ($keyString) {
+-                return "{$keyString} {$item}";
+-            }, $compiled);
++            $compiled = array_map(fn($item): string => "{$keyString} {$item}", $compiled);
+         }
+
+         return implode(' ', $compiled);
+@@ Line 314 @@
+      */
+     public function dueEvents(): array
+     {
+-        return array_filter($this->events, function (Event $event) {
+-            return $event->isDue();
+-        });
++        return array_filter($this->events, fn(Event $event): bool => $event->isDue());
+     }
+
+     /**
+@@ Line 443 @@
+      * @param \UnitEnum|string $store The cache store
+      * @return $this
+      */
+-    public function useCache(UnitEnum|string $store)
++    public function useCache(UnitEnum|string $store): static
+     {
+         $store = $this->enumToString($store);
+    ----------- end diff -----------
+
+Applied rules:
+ * FlipTypeControlToUseExclusiveTypeRector
+ * NewlineBetweenClassLikeStmtsRector
+ * CountArrayToEmptyArrayComparisonRector
+ * ClosureToArrowFunctionRector
+ * ReturnTypeFromStrictFluentReturnRector
+ * ClosureReturnTypeRector
+
+
+34) src/SchedulingMonitor.php:14
+
+    ---------- begin diff ----------
+@@ Line 14 @@
+      * Event type constants
+      */
+     public const EVENT_TYPE_CALLBACK = 'callback';
++
+     public const EVENT_TYPE_CAKE_COMMAND = 'cake_command';
++
+     public const EVENT_TYPE_EXEC = 'exec';
++
+     public const EVENT_TYPE_UNKNOWN = 'unknown-event';
+
+     /**
+@@ Line 42 @@
+     public static function generateNameFromCommand(string $command): string
+     {
+         $cakeCommand = self::getCakeCommandPrefix();
+-        if (strpos($command, $cakeCommand) === 0) {
++        if (str_starts_with($command, $cakeCommand)) {
+             $commandName = substr($command, strlen($cakeCommand));
+
+             return 'cake-' . str_replace(' ', '-', $commandName);
+@@ Line 64 @@
+     {
+         $cakeCommand = CommandBuilder::getCakeCommandPrefix();
+
+-        return strpos($command, $cakeCommand) === 0;
++        return str_starts_with($command, $cakeCommand);
+     }
+
+     /**
+    ----------- end diff -----------
+
+Applied rules:
+ * NewlineBetweenClassLikeStmtsRector
+ * StrStartsWithRector
+
+
+35) src/Service/ScheduleMonitorService.php:75
+
+    ---------- begin diff ----------
+@@ Line 75 @@
+         }
+
+         $oldTasks = [];
+-        if (!empty($currentNames)) {
++        if ($currentNames !== []) {
+             $oldTasks = $monitoredTasksTable->find()
+                 ->whereNotInList('name', $currentNames)
+                 ->toArray();
+@@ Line 111 @@
+             $command = null;
+             try {
+                 $command = $event->getCommand();
+-            } catch (\LogicException $e) {
++            } catch (\LogicException) {
+                 $command = null;
+             }
+
+@@ Line 132 @@
+                 'timezone' => $timezone,
+                 'grace_time_in_minutes' => $graceTime,
+             ];
+-        } catch (\Exception $e) {
++        } catch (\Exception) {
+             return null;
+         }
+     }
+    ----------- end diff -----------
+
+Applied rules:
+ * SimplifyEmptyCheckOnEmptyArrayRector
+ * CatchExceptionNameMatchingTypeRector
+ * RemoveUnusedVariableInCatchRector
+
+
+36) src/Widget/ScheduledTasksWidget.php:21
+
+    ---------- begin diff ----------
+@@ Line 21 @@
+      */
+     public function getData(array $options = []): array
+     {
+-        return $this->remember(function () {
++        return $this->remember(function (): array {
+             try {
+                 $summaryValues = $this->rhythm->getStorage()->values('scheduled_tasks', ['summary']);
+
+@@ Line 30 @@
+                 if ($summaryValues->count() > 0) {
+                     $summaryData = $summaryValues->first();
+                     if ($summaryData && $summaryData->value) {
+-                        $summary = json_decode($summaryData->value, true) ?: [];
++                        $summary = json_decode((string) $summaryData->value, true) ?: [];
+                     }
+                 }
+
+@@ Line 40 @@
+                 if ($detailsValues->count() > 0) {
+                     $detailsData = $detailsValues->first();
+                     if ($detailsData && $detailsData->value) {
+-                        $taskDetails = json_decode($detailsData->value, true) ?: [];
++                        $taskDetails = json_decode((string) $detailsData->value, true) ?: [];
+                     }
+                 }
+
+@@ Line 54 @@
+                     'overdue_tasks' => $summary['overdue'] ?? 0,
+                     'last_updated' => $summary['timestamp'] ?? null,
+                 ];
+-            } catch (Exception $e) {
++            } catch (Exception $exception) {
+                 return [
+                     'summary' => [],
+                     'tasks' => [],
+@@ Line 64 @@
+                     'completed_tasks' => 0,
+                     'overdue_tasks' => 0,
+                     'last_updated' => null,
+-                    'error' => $e->getMessage(),
++                    'error' => $exception->getMessage(),
+                 ];
+             }
+         }, 'scheduled_tasks_widget', $this->getRefreshInterval());
+    ----------- end diff -----------
+
+Applied rules:
+ * CatchExceptionNameMatchingTypeRector
+ * NullToStrictStringFuncCallArgRector
+ * ClosureReturnTypeRector
+
+
+37) tests/TestCase/CacheEventMutexTest.php:113
+
+    ---------- begin diff ----------
+@@ Line 113 @@
+
+     public function testMutexNameIsConsistent(): void
+     {
+-        $mutex = new CacheEventMutex();
++        new CacheEventMutex();
+         $event = $this->createEvent('php -v');
+
+         $name1 = $event->mutexName();
+    ----------- end diff -----------
+
+Applied rules:
+ * RemoveUnusedVariableAssignRector
+
+
+38) tests/TestCase/CallbackEventTest.php:21
+
+    ---------- begin diff ----------
+@@ Line 21 @@
+
+     public function testConstructorWithCallable(): void
+     {
+-        $callback = function () {
+-            return 'test';
+-        };
++        $callback = (fn(): string => 'test');
+
+         $event = new CallbackEvent($this->mutex, $callback);
+
+@@ Line 47 @@
+
+     public function testConstructorWithParameters(): void
+     {
+-        $callback = function ($a, $b) {
+-            return $a + $b;
+-        };
++        $callback = (fn($a, $b): float|int|array => $a + $b);
+
+         $event = new CallbackEvent($this->mutex, $callback, [1, 2]);
+
+@@ Line 59 @@
+     public function testExecuteWithCallable(): void
+     {
+         $result = null;
+-        $callback = function () use (&$result) {
++        $callback = function () use (&$result): true {
+             $result = 'executed';
+
+             return true;
+@@ Line 88 @@
+
+     public function testExecuteWithFalseReturn(): void
+     {
+-        $callback = function () {
+-            return false;
+-        };
++        $callback = (fn(): false => false);
+
+         $event = new CallbackEvent($this->mutex, $callback);
+         $reflection = new \ReflectionClass($event);
+@@ Line 141 @@
+
+     public function testShouldSkipDueToOverlappingWithDescription(): void
+     {
+-        $event = new CallbackEvent($this->mutex, function () {
+-            return true;
+-        });
++        $event = new CallbackEvent($this->mutex, fn(): true => true);
+         $event->name('test-event');
+
+         $result = $event->shouldSkipDueToOverlapping();
+@@ Line 153 @@
+
+     public function testShouldSkipDueToOverlappingWithoutDescription(): void
+     {
+-        $event = new CallbackEvent($this->mutex, function () {
+-            return true;
+-        });
++        $event = new CallbackEvent($this->mutex, fn(): true => true);
+
+         $result = $event->shouldSkipDueToOverlapping();
+
+@@ Line 164 @@
+
+     public function testRunInBackgroundThrowsException(): void
+     {
+-        $event = new CallbackEvent($this->mutex, function () {
+-            return true;
+-        });
++        $event = new CallbackEvent($this->mutex, fn(): true => true);
+
+         $this->expectException(RuntimeException::class);
+         $this->expectExceptionMessage('Scheduled closures can not be run in the background.');
+@@ Line 176 @@
+
+     public function testWithoutOverlappingRequiresName(): void
+     {
+-        $event = new CallbackEvent($this->mutex, function () {
+-            return true;
+-        });
++        $event = new CallbackEvent($this->mutex, fn(): true => true);
+
+         $this->expectException(LogicException::class);
+         $this->expectExceptionMessage("A scheduled event name is required to prevent overlapping. Use the 'name' method before 'withoutOverlapping'.");
+@@ Line 188 @@
+
+     public function testWithoutOverlappingWithName(): void
+     {
+-        $event = new CallbackEvent($this->mutex, function () {
+-            return true;
+-        });
++        $event = new CallbackEvent($this->mutex, fn(): true => true);
+         $event->name('test-event');
+
+         $result = $event->withoutOverlapping(60);
+@@ Line 200 @@
+
+     public function testOnOneServerRequiresName(): void
+     {
+-        $event = new CallbackEvent($this->mutex, function () {
+-            return true;
+-        });
++        $event = new CallbackEvent($this->mutex, fn(): true => true);
+
+         $this->expectException(LogicException::class);
+         $this->expectExceptionMessage("A scheduled event name is required to only run on one server. Use the 'name' method before 'onOneServer'.");
+@@ Line 212 @@
+
+     public function testOnOneServerWithName(): void
+     {
+-        $event = new CallbackEvent($this->mutex, function () {
+-            return true;
+-        });
++        $event = new CallbackEvent($this->mutex, fn(): true => true);
+         $event->name('test-event');
+
+         $result = $event->onOneServer();
+@@ Line 224 @@
+
+     public function testGetSummaryForDisplayWithDescription(): void
+     {
+-        $event = new CallbackEvent($this->mutex, function () {
+-            return true;
+-        });
++        $event = new CallbackEvent($this->mutex, fn(): true => true);
+         $event->name('test-description');
+
+         $summary = $event->getSummaryForDisplay();
+@@ Line 245 @@
+
+     public function testGetSummaryForDisplayWithCallable(): void
+     {
+-        $event = new CallbackEvent($this->mutex, function () {
+-            return true;
+-        });
++        $event = new CallbackEvent($this->mutex, fn(): true => true);
+
+         $summary = $event->getSummaryForDisplay();
+
+@@ Line 256 @@
+
+     public function testMutexName(): void
+     {
+-        $event = new CallbackEvent($this->mutex, function () {
+-            return true;
+-        });
++        $event = new CallbackEvent($this->mutex, fn(): true => true);
+         $event->name('test-event');
+
+         $mutexName = $event->mutexName();
+@@ Line 268 @@
+
+     public function testMutexNameWithoutDescription(): void
+     {
+-        $event = new CallbackEvent($this->mutex, function () {
+-            return true;
+-        });
++        $event = new CallbackEvent($this->mutex, fn(): true => true);
+
+         $mutexName = $event->mutexName();
+
+@@ Line 279 @@
+
+     public function testRemoveMutexWithDescription(): void
+     {
+-        $event = new CallbackEvent($this->mutex, function () {
+-            return true;
+-        });
++        $event = new CallbackEvent($this->mutex, fn(): true => true);
+         $event->name('test-event');
+
+         $reflection = new \ReflectionClass($event);
+@@ Line 292 @@
+
+     public function testRemoveMutexWithoutDescription(): void
+     {
+-        $event = new CallbackEvent($this->mutex, function () {
+-            return true;
+-        });
++        $event = new CallbackEvent($this->mutex, fn(): true => true);
+
+         $reflection = new \ReflectionClass($event);
+         $method = $reflection->getMethod('removeMutex');
+    ----------- end diff -----------
+
+Applied rules:
+ * ClosureToArrowFunctionRector
+ * ClosureReturnTypeRector
+
+
+39) tests/TestCase/Command/ScheduleListCommandTest.php:17
+
+    ---------- begin diff ----------
+@@ Line 17 @@
+         parent::setUp();
+         $this->setAppNamespace();
+         $this->configApplication(
+-            'TestApp\Application',
++            \TestApp\Application::class,
+             [PLUGIN_TESTS . 'TestApp' . DS . 'config'],
+         );
+
+@@ Line 28 @@
+     public function testListWithNoEvents(): void
+     {
+         $schedule = new Schedule();
+-        $this->mockService(Schedule::class, function () use ($schedule) {
+-            return $schedule;
+-        });
++        $this->mockService(Schedule::class, fn(): \Crustum\Scheduling\Schedule => $schedule);
+
+         $this->exec('schedule list');
+
+@@ Line 44 @@
+         $schedule->command('echo "daily"')->daily();
+         $schedule->command('echo "hourly"')->hourly();
+
+-        $this->mockService(Schedule::class, function () use ($schedule) {
+-            return $schedule;
+-        });
++        $this->mockService(Schedule::class, fn(): \Crustum\Scheduling\Schedule => $schedule);
+
+         $this->exec('schedule list');
+
+@@ Line 61 @@
+         $schedule = new Schedule();
+         $schedule->command('echo "test"')->daily()->description('Test command');
+
+-        $this->mockService(Schedule::class, function () use ($schedule) {
+-            return $schedule;
+-        });
++        $this->mockService(Schedule::class, fn(): \Crustum\Scheduling\Schedule => $schedule);
+
+         $this->exec('schedule list --verbose');
+
+@@ Line 78 @@
+         $schedule = new Schedule();
+         $schedule->command('echo "daily"')->dailyAt('08:00')->timezone('America/Los_Angeles');
+
+-        $this->mockService(Schedule::class, function () use ($schedule) {
+-            return $schedule;
+-        });
++        $this->mockService(Schedule::class, fn(): \Crustum\Scheduling\Schedule => $schedule);
+
+         $this->exec('schedule list --timezone=UTC');
+
+@@ Line 97 @@
+         $schedule = new Schedule();
+         $schedule->command('echo "twice"')->twiceDaily(13, 17)->timezone('America/Los_Angeles');
+
+-        $this->mockService(Schedule::class, function () use ($schedule) {
+-            return $schedule;
+-        });
++        $this->mockService(Schedule::class, fn(): \Crustum\Scheduling\Schedule => $schedule);
+
+         $this->exec('schedule list --timezone=UTC');
+    ----------- end diff -----------
+
+Applied rules:
+ * StringClassNameToClassConstantRector
+ * ClosureToArrowFunctionRector
+ * ClosureReturnTypeRector
+
+
+ [OK] 39 files have been changed by Rector

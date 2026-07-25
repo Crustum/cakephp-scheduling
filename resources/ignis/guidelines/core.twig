@@ -1,0 +1,17 @@
+# CakePHP Scheduling
+
+Prefer package docs and the `scheduling-development` skill for orientation. Requires SignalHandler.
+
+@scoped(['config/scheduling.php', 'config/bootstrap.php'])
+## Scheduling config
+- Publish via `manifest install --plugin Crustum/Scheduling`; load from bootstrap.
+- Load Scheduling **and** SignalHandler; migrate monitoring tables after install.
+- Register tasks once on `Application.buildContainer` via container `Schedule` (`command` / `call` / `exec`) — see skill.
+@endscoped
+
+@scoped(['src/Console/**', 'src/Command/**'])
+## Schedule tasks
+- Use `withoutOverlapping()` / `onOneServer()` for heavy or multi-host work.
+- Sub-minute tasks need a matching runner cadence — once-per-minute cron alone is not enough.
+- Production: cron invokes `schedule run` every minute; prefer `schedule list` / `schedule test`.
+@endscoped
