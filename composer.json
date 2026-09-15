@@ -32,7 +32,14 @@
     "scripts": {
         "check": [
             "@cs-check",
+            "@rector-check",
             "@test",
+            "@analyse"
+        ],
+        "fix": [
+            "@cs-fix",
+            "@rector-fix",
+            "@cs-fix",
             "@analyse"
         ],
         "analyse": [
@@ -46,10 +53,10 @@
         "test:coverage": "phpunit --coverage-html coverage",
         "rector-check": "vendor/bin/rector process --dry-run",
         "rector-fix": "vendor/bin/rector process",
-        "stan": "tools/phpstan analyse src/",
+        "stan": "vendor/bin/phpstan analyse src/",
         "psalm": "tools/psalm --show-info=false",
-        "stan-tests": "tools/phpstan analyze -c tests/phpstan.neon",
-        "stan-baseline": "tools/phpstan --generate-baseline"
+        "stan-tests": "vendor/bin/phpstan analyze -c tests/phpstan.neon",
+        "stan-baseline": "vendor/bin/phpstan --generate-baseline"
     },
     "extra": {
         "installer-name": "Scheduling"

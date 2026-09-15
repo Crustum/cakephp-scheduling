@@ -157,8 +157,21 @@ Represents a scheduled task event.
 | --- | --- |
 | `before(callable $callback)` | Register a callback to run before the task |
 | `after(callable $callback)` | Register a callback to run after the task |
+| `then(callable $callback)` | Register a callback to run after the task (alias used by group chaining) |
 | `onSuccess(callable $callback)` | Register a callback to run when the task succeeds |
 | `onFailure(callable $callback)` | Register a callback to run when the task fails |
+
+Lifecycle and filter callbacks receive the scheduled `Event` when they type-hint it:
+
+```php
+use Crustum\Scheduling\Event;
+
+$schedule->command('emails send')
+    ->daily()
+    ->before(function (Event $event) {
+        // The scheduled event instance...
+    });
+```
 
 ### Output Methods
 
@@ -232,6 +245,10 @@ bin/cake schedule list [--timezone=TIMEZONE]
 
 **Options:**
 - `--timezone` - Display cron expressions and next-run times in this timezone
+
+When `--timezone` differs from an event's own timezone, the event's cron expression is converted by expanding ranges, steps, and wildcards before shifting hours and minutes. The offset in effect at the event's next run date is used, so listings stay correct across daylight saving transitions.
+
+Conversion results to be aware of expressions crossing a day boundary are returned as multiple rows, one per resulting day. Rows merge into a single comma expression when all day fields are wildcards. Day-of-month shifts respect month lengths. Dates whose conversion depends on the year (for example, shifts into or out of February, or `29 Feb`) are shown unchanged. Tasks restricted on both day-of-month and day-of-week, or fields with unsupported syntax (`MON-FRI`, `L`), are shown unchanged when the restricted field would need shifting.
 
 ### SchedulePauseCommand
 

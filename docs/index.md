@@ -102,6 +102,14 @@ If you would like to view an overview of your scheduled tasks and the next time 
 bin/cake schedule list
 ```
 
+To display cron expressions and next-run times in a different timezone, pass the `--timezone` option. Expressions are converted from each event's own timezone, expanding ranges, steps, and wildcards before shifting:
+
+```bash
+bin/cake schedule list --timezone=UTC
+```
+
+When a converted expression straddles a day boundary, it is shown as multiple rows — one per resulting day. Expressions that cannot be converted exactly (unsupported field syntax, February dates whose result depends on the year, or events straddling a daylight saving transition) are displayed unchanged.
+
 <a name="scheduling-cakephp-commands"></a>
 ### Scheduling CakePHP Commands
 
@@ -193,6 +201,12 @@ If needed, you may specify how many minutes must pass before the "without overla
 
 ```php
 $schedule->command('emails send')->withoutOverlapping(10);
+```
+
+The second argument controls whether the lock is released when the process receives a termination signal (`SIGTERM`, `SIGINT`, `SIGQUIT`). It defaults to `true`; pass `false` to keep the lock in place across restarts:
+
+```php
+$schedule->command('emails send')->withoutOverlapping(10, false);
 ```
 
 Behind the scenes, the `withoutOverlapping` method utilizes your application's cache to obtain locks. If necessary, you can clear these cache locks using the `schedule clear` console command. This is typically only necessary if a task becomes stuck due to an unexpected server problem.

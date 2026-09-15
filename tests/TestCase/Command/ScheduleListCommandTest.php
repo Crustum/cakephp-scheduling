@@ -87,6 +87,25 @@ class ScheduleListCommandTest extends TestCase
         \Cake\Chronos\Chronos::setTestNow('2026-01-15 12:00:00');
 
         $schedule = new Schedule();
+        $schedule->command('echo "twice"')->cron('0 13,17 1 * *')->timezone('America/Los_Angeles');
+
+        $this->mockService(Schedule::class, fn(): \Crustum\Scheduling\Schedule => $schedule);
+
+        $this->exec('schedule list --timezone=UTC');
+
+        $this->assertExitSuccess();
+        $this->assertOutputContains('0 21 1 * *');
+        $this->assertOutputContains('0 1 2 * *');
+        $this->assertOutputContains('Found 1 scheduled event(s)');
+
+        \Cake\Chronos\Chronos::setTestNow();
+    }
+
+    public function testListMergesMixedCarryWhenDaysAreWildcards(): void
+    {
+        \Cake\Chronos\Chronos::setTestNow('2026-01-15 12:00:00');
+
+        $schedule = new Schedule();
         $schedule->command('echo "twice"')->twiceDaily(13, 17)->timezone('America/Los_Angeles');
 
         $this->mockService(Schedule::class, fn(): \Crustum\Scheduling\Schedule => $schedule);
@@ -94,9 +113,26 @@ class ScheduleListCommandTest extends TestCase
         $this->exec('schedule list --timezone=UTC');
 
         $this->assertExitSuccess();
-        $this->assertOutputContains('0 21 * * *');
-        $this->assertOutputContains('0 1 * * *');
-        $this->assertOutputContains('Found 1 scheduled event(s)');
+        $this->assertOutputContains('0 1,21 * * *');
+
+        \Cake\Chronos\Chronos::setTestNow();
+    }
+
+    public function testListUsesOffsetAtNextRunDateAcrossDst(): void
+    {
+        \Cake\Chronos\Chronos::setTestNow('2023-10-29');
+
+        $schedule = new Schedule();
+        $schedule->command('echo "oct"')->cron('0 0 30 10 *')->timezone('Europe/London');
+        $schedule->command('echo "jun"')->cron('0 0 30 6 *')->timezone('Europe/London');
+
+        $this->mockService(Schedule::class, fn(): \Crustum\Scheduling\Schedule => $schedule);
+
+        $this->exec('schedule list --timezone=UTC');
+
+        $this->assertExitSuccess();
+        $this->assertOutputContains('0 0 30 10 *');
+        $this->assertOutputContains('0 23 29 6 *');
 
         \Cake\Chronos\Chronos::setTestNow();
     }

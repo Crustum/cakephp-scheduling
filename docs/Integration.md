@@ -154,6 +154,10 @@ $schedule->command('cleanup logs')->dailyAt('03:30');
 $schedule->command('reports weekly')->weekly();
 $schedule->command('reports monthly')->monthly();
 $schedule->command('maintenance')->weeklyOn(1, '08:00'); // Monday at 8 AM
+
+// Run on specific days of the month
+$schedule->command('payroll')->daysOfMonth([1, 15]);
+$schedule->command('reminders')->daysOfMonth(1, 10, 20);
 ```
 
 ### Custom Cron Expressions
@@ -176,6 +180,15 @@ $schedule->command('business task')
 $schedule->command('maintenance task')
     ->hourly()
     ->unlessBetween('00:00', '06:00');
+```
+
+Time windows are evaluated in the task's own timezone at filter time, so the `timezone` method may be chained in any order:
+
+```php
+$schedule->command('business task')
+    ->hourly()
+    ->between('09:00', '17:00')
+    ->timezone('America/Chicago');
 ```
 
 ### Day-Based Constraints
@@ -228,7 +241,14 @@ $schedule->command('long running task')
 $schedule->command('data import')
     ->everyFiveMinutes()
     ->withoutOverlapping(10);
+
+// Keep the overlap lock when the process is terminated
+$schedule->command('data import')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(10, false);
 ```
+
+By default, overlap locks are released when the process receives `SIGTERM`, `SIGINT`, or `SIGQUIT` via the SignalHandler plugin, so a terminated task does not stay locked forever.
 
 ## Single-Server Execution
 
@@ -468,6 +488,18 @@ $schedule->command('emails send')
     })
     ->onFailure(function (string $output) {
         // The task failed...
+    });
+```
+
+Lifecycle and filter callbacks (`before`, `after`, `then`, `onSuccess`, `onFailure`, `when`, `skip`) also receive the scheduled `Event` when they type-hint it:
+
+```php
+use Crustum\Scheduling\Event;
+
+$schedule->command('emails send')
+    ->daily()
+    ->before(function (Event $event) {
+        // Inspect the scheduled event before it runs...
     });
 ```
 

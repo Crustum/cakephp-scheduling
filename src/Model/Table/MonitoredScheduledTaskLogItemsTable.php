@@ -325,9 +325,7 @@ class MonitoredScheduledTaskLogItemsTable extends Table
      */
     public function cleanupOldItems(?int $days = null): int
     {
-        if ($days === null) {
-            $days = Configure::read('Scheduling.delete_log_items_older_than_days', 30);
-        }
+        $days ??= Configure::read('Scheduling.delete_log_items_older_than_days', 30);
 
         $cutoffDate = DateTime::now()->subDays($days);
 

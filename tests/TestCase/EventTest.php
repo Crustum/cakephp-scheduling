@@ -345,7 +345,7 @@ class EventTest extends TestCase
 
     public function testBetweenResolvesTimezoneAtFilterTime(): void
     {
-        Chronos::setTestNow('2024-01-01 14:00:00');
+        Chronos::setTestNow('2024-01-01 14:00:00 UTC');
 
         $event = $this->createEvent('php -v');
         $event->between('08:00', '10:00')->timezone('America/New_York');
