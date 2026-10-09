@@ -65,6 +65,19 @@ class ScheduleListCommandTest extends TestCase
         $this->assertOutputContains('Test command');
     }
 
+    public function testListVerboseShowsSingleServerFlag(): void
+    {
+        $schedule = new Schedule();
+        $schedule->command('echo "solo"')->daily()->name('solo-task')->onOneServer();
+
+        $this->mockService(Schedule::class, fn(): \Crustum\Scheduling\Schedule => $schedule);
+
+        $this->exec('schedule list --verbose');
+
+        $this->assertExitSuccess();
+        $this->assertOutputContains('Single server only');
+    }
+
     public function testListConvertsExpressionToDisplayTimezone(): void
     {
         \Cake\Chronos\Chronos::setTestNow('2026-01-15 12:00:00');

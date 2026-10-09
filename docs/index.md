@@ -228,6 +228,16 @@ $schedule->command('report generate')
     ->onOneServer();
 ```
 
+To apply `onOneServer` to all scheduled tasks, you may call the `alwaysOnOneServer` method when bootstrapping the scheduler:
+
+```php
+use Crustum\Scheduling\Schedule;
+
+Schedule::alwaysOnOneServer();
+```
+
+Scheduled closures without a `name` are excluded and will continue to run on every server.
+
 <a name="background-tasks"></a>
 ### Background Tasks
 

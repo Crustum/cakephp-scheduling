@@ -62,10 +62,33 @@ class SchedulePauseResumeCommandTest extends TestCase
 
     public function testInterruptSetsSignal(): void
     {
+        $runStartedAt = \Cake\Chronos\Chronos::now();
+
         $this->exec('schedule interrupt');
         $this->assertExitSuccess();
         $this->assertOutputContains('Broadcasting schedule interrupt signal.');
-        $this->assertTrue(Schedule::shouldInterrupt());
+        $this->assertTrue(Schedule::shouldInterrupt($runStartedAt));
+    }
+
+    public function testInterruptObservedSinceRunStart(): void
+    {
+        $runStartedAt = \Cake\Chronos\Chronos::now();
+        Schedule::interrupt();
+
+        $this->assertTrue((new Schedule())->hasBeenInterruptedSince($runStartedAt));
+        $this->assertTrue(Schedule::shouldInterrupt($runStartedAt));
+    }
+
+    public function testStaleInterruptDoesNotAffectNewRuns(): void
+    {
+        \Cake\Cache\Cache::write(
+            Schedule::INTERRUPT_CACHE_KEY,
+            (int)(microtime(true) * 1000) - 60_000,
+            Schedule::controlCacheStore()
+        );
+
+        $this->assertFalse(Schedule::shouldInterrupt());
+        $this->assertFalse((new Schedule())->hasBeenInterruptedSince(\Cake\Chronos\Chronos::now()));
     }
 
     public function testWithoutInterruptionPollingDisablesChecks(): void

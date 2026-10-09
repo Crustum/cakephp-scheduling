@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-10-09
+
+### Added
+- `Schedule::alwaysOnOneServer()` to run every named scheduled event on only one server
+- `Schedule::hasBeenInterruptedSince()` to check for interrupt signals anchored to a run start time
+
+### Changed
+- `schedule interrupt` now stores a millisecond timestamp instead of an end-of-minute flag, so long-running scheduled commands observe the signal; `schedule run` and `schedule work` no longer clear the signal when repeatable events are due, and stale signals no longer interrupt newer runs
+
 ## [1.1.0] - 2026-09-15
 
 ### Added

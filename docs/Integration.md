@@ -266,6 +266,16 @@ $schedule->command('process queue high')
     ->name('process-high-priority');
 ```
 
+To apply `onOneServer` to all scheduled tasks, call `alwaysOnOneServer` when bootstrapping the scheduler:
+
+```php
+use Crustum\Scheduling\Schedule;
+
+Schedule::alwaysOnOneServer();
+```
+
+Scheduled closures without a `name` are excluded and will continue to run on every server.
+
 ## Background Execution
 
 Run tasks in the background to prevent blocking:

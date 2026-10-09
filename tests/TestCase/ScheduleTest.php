@@ -146,4 +146,30 @@ class ScheduleTest extends TestCase
 
         $this->assertTrue($beforeCalled);
     }
+
+    public function testAlwaysOnOneServerDisabledByDefault(): void
+    {
+        $schedule = $this->createSchedule();
+        $schedule->command('php -v')->daily()->name('named-task');
+
+        $this->assertFalse($schedule->events()[0]->onOneServer);
+    }
+
+    public function testAlwaysOnOneServerAppliesToEventsExceptUnnamedClosures(): void
+    {
+        Schedule::alwaysOnOneServer(true);
+
+        try {
+            $schedule = $this->createSchedule();
+            $schedule->command('php -v')->daily()->name('named-task');
+            $schedule->call(fn(): string => 'result')->everyMinute();
+
+            $events = $schedule->events();
+
+            $this->assertTrue($events[0]->onOneServer);
+            $this->assertFalse($events[1]->onOneServer);
+        } finally {
+            Schedule::alwaysOnOneServer(false);
+        }
+    }
 }

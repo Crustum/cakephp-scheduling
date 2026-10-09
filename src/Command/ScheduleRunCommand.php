@@ -58,18 +58,6 @@ class ScheduleRunCommand extends BaseSchedulerCommand
         $dueEvents = $schedule->dueEvents();
         $verbose = (bool)$args->getOption('verbose');
 
-        $hasRepeatable = false;
-        foreach ($dueEvents as $event) {
-            if ($event->isRepeatable()) {
-                $hasRepeatable = true;
-                break;
-            }
-        }
-
-        if ($hasRepeatable) {
-            Schedule::clearInterruptSignal();
-        }
-
         if ($dueEvents === []) {
             if ($verbose) {
                 $io->info('No scheduled events are due to run.');
@@ -212,7 +200,7 @@ class ScheduleRunCommand extends BaseSchedulerCommand
             $paused = Schedule::isPaused();
 
             foreach ($events as $event) {
-                if (Schedule::shouldInterrupt()) {
+                if (Schedule::shouldInterrupt($startedAt)) {
                     return;
                 }
 

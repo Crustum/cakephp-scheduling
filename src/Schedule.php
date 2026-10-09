@@ -101,6 +101,13 @@ class Schedule
     public static bool $interruptible = true;
 
     /**
+     * Indicates if every event should only run on one server for each cron expression.
+     *
+     * @var bool
+     */
+    public static bool $alwaysOnOneServer = false;
+
+    /**
      * Cache key used when the schedule is paused.
      *
      * @var string
@@ -316,7 +323,7 @@ class Schedule
      */
     public function dueEvents(): array
     {
-        return array_filter($this->events, fn(Event $event): bool => $event->isDue());
+        return array_filter($this->events(), fn(Event $event): bool => $event->isDue());
     }
 
     /**
@@ -326,6 +333,16 @@ class Schedule
      */
     public function events(): array
     {
+        if (static::$alwaysOnOneServer) {
+            foreach ($this->events as $event) {
+                if ($event instanceof CallbackEvent && $event->getDescription() === null) {
+                    continue;
+                }
+
+                $event->onOneServer();
+            }
+        }
+
         return $this->events;
     }
 
@@ -377,12 +394,9 @@ class Schedule
      */
     public static function interrupt(): void
     {
-        $now = Chronos::now();
-        $endOfMinute = $now->setTime((int)$now->hour, (int)$now->minute, 59);
-
         Cache::write(
             static::INTERRUPT_CACHE_KEY,
-            $endOfMinute->getTimestamp(),
+            self::timestampMs(Chronos::now()),
             static::controlCacheStore()
         );
     }
@@ -404,27 +418,50 @@ class Schedule
     /**
      * Determine if the schedule run should be interrupted.
      *
+     * Anchored to the given start time so a signal broadcast after the run
+     * started interrupts it, while a stale signal from an earlier run does not.
+     *
+     * @param \DateTimeInterface|null $since The run start time (defaults to now)
      * @return bool
      */
-    public static function shouldInterrupt(): bool
+    public static function shouldInterrupt(?DateTimeInterface $since = null): bool
     {
         if (!static::$interruptible) {
             return false;
         }
 
-        $until = Cache::read(static::INTERRUPT_CACHE_KEY, static::controlCacheStore());
+        $interruptedAt = Cache::read(static::INTERRUPT_CACHE_KEY, static::controlCacheStore());
 
-        if ($until === false || $until === null) {
+        return is_numeric($interruptedAt)
+            && (int)$interruptedAt >= self::timestampMs($since ?? Chronos::now());
+    }
+
+    /**
+     * Determine if the schedule has been interrupted since the given time.
+     *
+     * @param \DateTimeInterface $time The time to compare against
+     * @return bool True if an interrupt signal was broadcast at or after the given time
+     */
+    public function hasBeenInterruptedSince(DateTimeInterface $time): bool
+    {
+        if (!static::$interruptible) {
             return false;
         }
 
-        if (time() > (int)$until) {
-            static::clearInterruptSignal();
+        $interruptedAt = Cache::read(static::INTERRUPT_CACHE_KEY, static::controlCacheStore());
 
-            return false;
-        }
+        return is_numeric($interruptedAt) && (int)$interruptedAt >= self::timestampMs($time);
+    }
 
-        return true;
+    /**
+     * Get the millisecond timestamp for the given time.
+     *
+     * @param \DateTimeInterface $time The time
+     * @return int Milliseconds since the Unix epoch
+     */
+    protected static function timestampMs(DateTimeInterface $time): int
+    {
+        return (int)$time->format('U') * 1000 + (int)$time->format('v');
     }
 
     /**
@@ -435,6 +472,17 @@ class Schedule
     public static function clearInterruptSignal(): void
     {
         Cache::delete(static::INTERRUPT_CACHE_KEY, static::controlCacheStore());
+    }
+
+    /**
+     * Indicate that every event on the schedule should only run on one server for each cron expression.
+     *
+     * @param bool $value Whether to enable the behavior
+     * @return void
+     */
+    public static function alwaysOnOneServer(bool $value = true): void
+    {
+        static::$alwaysOnOneServer = $value;
     }
 
     /**
