@@ -9,8 +9,6 @@ use Cake\Core\BasePlugin;
 use Cake\Core\ContainerInterface;
 use Cake\Core\PluginApplicationInterface;
 use Cake\Event\EventManager;
-use Crustum\PluginManifest\Manifest\ManifestInterface;
-use Crustum\PluginManifest\Manifest\ManifestTrait;
 use Crustum\Scheduling\Command\ScheduleClearCacheCommand;
 use Crustum\Scheduling\Command\ScheduleFinishCommand;
 use Crustum\Scheduling\Command\ScheduleInterruptCommand;
@@ -30,13 +28,9 @@ use Crustum\Scheduling\Listener\ScheduleMonitorListener;
  *
  * CakePHP Scheduler plugin.
  * Provides simplified cron management with second-based scheduling capabilities.
- *
- * @uses \Crustum\PluginManifest\Manifest\ManifestTrait
  */
-class SchedulingPlugin extends BasePlugin implements ManifestInterface
+class SchedulingPlugin extends BasePlugin
 {
-    use ManifestTrait;
-
     /**
      * Load all plugin components and bootstrap
      *
@@ -142,31 +136,5 @@ class SchedulingPlugin extends BasePlugin implements ManifestInterface
             ->add(ScheduleMonitorListCommand::class)
             ->addArgument(Schedule::class)
             ->addArgument(CommandFactoryInterface::class);
-    }
-
-    /**
-     * Get the manifest for the plugin.
-     *
-     * @return array<int, array<string, mixed>>
-     */
-    public static function manifest(): array
-    {
-        $pluginPath = dirname(__DIR__);
-
-        return array_merge(
-            static::manifestMigrations(
-                $pluginPath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'Migrations',
-            ),
-            static::manifestConfig(
-                $pluginPath . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'scheduling.php',
-                CONFIG . 'scheduling.php',
-                false,
-            ),
-            static::manifestBootstrapAppend(
-                "if (file_exists(CONFIG . 'scheduling.php')) {\n    Configure::load('scheduling', 'default');\n}",
-                '// Scheduling Plugin Configuration',
-            ),
-            static::manifestStarRepo('crustum/cakephp-scheduling'),
-        );
     }
 }

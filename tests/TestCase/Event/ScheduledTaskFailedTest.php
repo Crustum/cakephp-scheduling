@@ -30,6 +30,19 @@ class ScheduledTaskFailedTest extends TestCase
         $this->assertSame($command, $scheduledEvent->getSubject());
         $this->assertSame($event, $scheduledEvent->getData('event'));
         $this->assertSame($exception, $scheduledEvent->getData('exception'));
+        $this->assertNull($scheduledEvent->getData('runtime'));
+    }
+
+    public function testEventCarriesRuntime(): void
+    {
+        $command = $this->createStub(BaseSchedulerCommand::class);
+        $event = $this->createEvent('php -v');
+        $exception = new \Exception('Command failed');
+
+        $scheduledEvent = new ScheduledTaskFailed($command, $event, $exception, 12.5);
+
+        $this->assertSame(12.5, $scheduledEvent->getData('runtime'));
+        $this->assertIsFloat($scheduledEvent->getData('runtime'));
     }
 
     public function testEventCanBeDispatched(): void

@@ -148,7 +148,6 @@ class ScheduleRunCommand extends BaseSchedulerCommand
             $runtime = round((microtime(true) - $startedAt) * 1000.0, 2);
 
             $this->dispatchSchedulerEvent(new ScheduledTaskFinished($this, $event, $runtime));
-
             if ($verbose) {
                 if ($event->skippedBecauseOverlapping) {
                     $io->info(sprintf('Skipped scheduled command due to overlapping: %s', $summary));
@@ -159,7 +158,12 @@ class ScheduleRunCommand extends BaseSchedulerCommand
 
             return true;
         } catch (\Throwable $throwable) {
-            $this->dispatchSchedulerEvent(new ScheduledTaskFailed($this, $event, $throwable));
+            $this->dispatchSchedulerEvent(new ScheduledTaskFailed(
+                $this,
+                $event,
+                $throwable,
+                round((microtime(true) - $startedAt) * 1000.0, 2)
+            ));
 
             $io->error(sprintf('Failed to run scheduled command: %s - %s', $summary, $throwable->getMessage()));
 

@@ -74,7 +74,6 @@ class ScheduleMonitorService
             $syncedCount++;
         }
 
-        $oldTasks = [];
         if ($currentNames !== []) {
             $oldTasks = $monitoredTasksTable->find()
                 ->whereNotInList('name', $currentNames)

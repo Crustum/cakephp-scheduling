@@ -23,12 +23,18 @@ class ScheduledTaskFailed extends Event
      * @param \Crustum\Scheduling\Command\BaseSchedulerCommand $subject The command that triggered this event
      * @param \Crustum\Scheduling\Event $event The scheduled event
      * @param \Throwable $exception The exception
+     * @param float|null $runtime The runtime of the scheduled event in milliseconds
      */
-    public function __construct(BaseSchedulerCommand $subject, ScheduledEvent $event, Throwable $exception)
-    {
+    public function __construct(
+        BaseSchedulerCommand $subject,
+        ScheduledEvent $event,
+        Throwable $exception,
+        ?float $runtime = null
+    ) {
         parent::__construct('Scheduling.ScheduledTaskFailed', $subject, [
             'event' => $event,
             'exception' => $exception,
+            'runtime' => $runtime,
         ]);
     }
 }

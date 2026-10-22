@@ -109,6 +109,8 @@ class CallbackEvent extends Event
      */
     protected function execute(): int
     {
+        $this->exception = null;
+
         try {
             if (is_object($this->callback)) {
                 if (!is_callable($this->callback)) {

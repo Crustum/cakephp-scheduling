@@ -43,6 +43,36 @@ class CallbackEventTest extends TestCase
         new CallbackEvent($this->mutex, 123);
     }
 
+    public function testExceptionIsNotRethrownOnSubsequentRuns(): void
+    {
+        $runs = 0;
+        $success = null;
+
+        $event = new CallbackEvent($this->mutex, function () use (&$runs): void {
+            if (++$runs === 1) {
+                throw new \Exception('First run failed.');
+            }
+        });
+        $event->onSuccess(function () use (&$success): void {
+            $success = true;
+        });
+        $event->onFailure(function () use (&$success): void {
+            $success = false;
+        });
+
+        try {
+            $event->run();
+        } catch (\Exception) {
+        }
+
+        $this->assertFalse($success);
+
+        $event->run();
+
+        $this->assertSame(2, $runs);
+        $this->assertTrue($success);
+    }
+
     public function testConstructorWithParameters(): void
     {
         $callback = fn($a, $b): float|int|array => $a + $b;
