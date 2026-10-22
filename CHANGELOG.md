@@ -10,8 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `runtime` (milliseconds) on the `Scheduling.ScheduledTaskFailed` event data
 
+### Changed
+- Soften `crustum/plugin-manifest` dependency: manifest moved to standalone `SchedulingManifest` provider, package is now `require-dev` + `suggest`
+
 ### Fixed
 - Scheduled callbacks no longer rethrow a previous run's exception on later runs
+- Scheduled CakePHP commands now invoke the PHP interpreter explicitly (`PHP_BINARY bin/cake.php`) instead of executing `bin/cake.php` directly
 
 ## [1.2.0] - 2026-10-09
 

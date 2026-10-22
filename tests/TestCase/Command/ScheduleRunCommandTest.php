@@ -6,6 +6,7 @@ namespace Crustum\Scheduling\Test\TestCase\Command;
 use Cake\Console\TestSuite\ConsoleIntegrationTestTrait;
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
+use Crustum\Scheduling\CommandBuilder;
 use Crustum\Scheduling\Schedule;
 
 class ScheduleRunCommandTest extends TestCase
@@ -47,7 +48,9 @@ class ScheduleRunCommandTest extends TestCase
         $this->exec('schedule run -v');
 
         $this->assertExitSuccess();
-        $this->assertOutputContains('Running scheduled command: php bin\\cake.php echo "test"');
+        $this->assertOutputContains(
+            'Running scheduled command: ' . CommandBuilder::getCakeCommandPrefix() . 'echo "test"'
+        );
     }
 
     public function testRunWithDueEventUnix(): void
@@ -66,6 +69,8 @@ class ScheduleRunCommandTest extends TestCase
         $this->exec('schedule run -v');
 
         $this->assertExitSuccess();
-        $this->assertOutputContains('Running scheduled command: bin/cake.php echo "test"');
+        $this->assertOutputContains(
+            'Running scheduled command: ' . CommandBuilder::getCakeCommandPrefix() . 'echo "test"'
+        );
     }
 }

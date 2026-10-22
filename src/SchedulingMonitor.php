@@ -27,16 +27,6 @@ class SchedulingMonitor
     public const MAX_NAME_LENGTH = 255;
 
     /**
-     * Get the CakePHP command prefix for the current OS.
-     *
-     * @return string The command prefix
-     */
-    public static function getCakeCommandPrefix(): string
-    {
-        return CommandBuilder::getCakeCommandPrefix();
-    }
-
-    /**
      * Generate a name from command string.
      *
      * @param string $command The command string
@@ -44,30 +34,15 @@ class SchedulingMonitor
      */
     public static function generateNameFromCommand(string $command): string
     {
-        $cakeCommand = self::getCakeCommandPrefix();
-        if (str_starts_with($command, $cakeCommand)) {
-            $commandName = substr($command, strlen($cakeCommand));
-
-            return 'cake-' . str_replace(' ', '-', $commandName);
+        $remainder = CommandBuilder::stripCakeCommandPrefix($command);
+        if ($remainder !== null) {
+            return 'cake-' . str_replace(' ', '-', $remainder);
         }
 
         $parts = explode(' ', $command);
         $baseName = basename($parts[0]);
 
         return 'exec-' . $baseName;
-    }
-
-    /**
-     * Check if a command is a CakePHP command.
-     *
-     * @param string $command The command string
-     * @return bool True if it's a CakePHP command
-     */
-    public static function isCakeCommand(string $command): bool
-    {
-        $cakeCommand = CommandBuilder::getCakeCommandPrefix();
-
-        return str_starts_with($command, $cakeCommand);
     }
 
     /**
@@ -83,7 +58,7 @@ class SchedulingMonitor
             return self::EVENT_TYPE_CALLBACK;
         }
 
-        if (!empty($command) && self::isCakeCommand($command)) {
+        if (!empty($command) && CommandBuilder::isCakeCommand($command)) {
             return self::EVENT_TYPE_CAKE_COMMAND;
         }
 

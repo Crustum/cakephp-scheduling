@@ -55,7 +55,7 @@ class CommandBuilder
         $output = $this->escapeArgument($event->output);
         $redirect = $event->shouldAppendOutput ? ' >> ' : ' > ';
 
-        $finished = $this->normalizeCommandForOS('php ' . self::getCakeCommandPrefix() . 'schedule finish "' . $event->mutexName() . '"');
+        $finished = $this->normalizeCommandForOS(self::getCakeCommandPrefix() . 'schedule finish "' . $event->mutexName() . '"');
 
         if (self::isWindows()) {
             return 'start /b cmd /v:on /c "(' . $command . ' & ' . $finished . ' ^!ERRORLEVEL^!)' . $redirect . $output . ' 2>&1"';
@@ -110,17 +110,99 @@ class CommandBuilder
     }
 
     /**
+     * Get the PHP binary escaped for shell usage.
+     *
+     * Quotes only when the path contains spaces or quotes so the common
+     * case (`/usr/local/bin/php`) stays unquoted and stable for mutex
+     * names and monitor detection.
+     *
+     * @return string The PHP binary
+     */
+    public static function getPhpBinary(): string
+    {
+        if (!preg_match('/[\s"\']/', PHP_BINARY)) {
+            return PHP_BINARY;
+        }
+
+        return escapeshellarg(PHP_BINARY);
+    }
+
+    /**
+     * Get the CakePHP script path for the current OS, without interpreter.
+     *
+     * @return string The script path
+     */
+    public static function getCakeScriptPath(): string
+    {
+        return self::isWindows() ? 'bin\cake.php' : 'bin/cake.php';
+    }
+
+    /**
      * Get the CakePHP command prefix for the current OS.
+     *
+     * Always invokes the interpreter explicitly so scheduled commands do not
+     * rely on the executable bit or the shebang of `bin/cake.php`.
      *
      * @return string The command prefix
      */
     public static function getCakeCommandPrefix(): string
     {
-        return self::isWindows() ? 'bin\cake.php ' : 'bin/cake.php ';
+        return self::getPhpBinary() . ' ' . self::getCakeScriptPath() . ' ';
+    }
+
+    /**
+     * Check if the given command invokes the CakePHP scheduler script.
+     *
+     * Matches current (`PHP_BINARY bin/cake.php`) and legacy
+     * (`bin/cake.php`, `php bin/cake.php`) forms on either slash style.
+     *
+     * @param string $command The command to check
+     * @return bool True if it is a CakePHP command
+     */
+    public static function isCakeCommand(string $command): bool
+    {
+        return (bool)preg_match('/^(?:\'[^\']+\'|"[^"]+"|\S+)\s+bin[\\\\\/]cake\.php(?=\s|$)|^bin[\\\\\/]cake\.php(?=\s|$)/', $command);
+    }
+
+    /**
+     * Strip the CakePHP invocation prefix, returning the remainder.
+     *
+     * @param string $command The command string
+     * @return string|null The remainder, or null when not a Cake command
+     */
+    public static function stripCakeCommandPrefix(string $command): ?string
+    {
+        if (!self::isCakeCommand($command)) {
+            return null;
+        }
+
+        return (string)preg_replace('/^(?:\'[^\']+\'|"[^"]+"|\S+)\s+bin[\\\\\/]cake\.php\s?|^bin[\\\\\/]cake\.php\s?/', '', $command, 1);
+    }
+
+    /**
+     * Normalize a command for stable comparison (mutex names, monitoring).
+     *
+     * Maps every legacy cake invocation to the canonical prefix so mutex
+     * hashes stay stable across the fix.
+     *
+     * @param string $command The command to normalize
+     * @return string The normalized command
+     */
+    public static function normalizeCommandForComparison(string $command): string
+    {
+        $remainder = self::stripCakeCommandPrefix($command);
+        if ($remainder === null) {
+            return str_replace(PHP_BINARY, self::getPhpBinary(), $command);
+        }
+
+        return self::getCakeCommandPrefix() . $remainder;
     }
 
     /**
      * Normalize command for the current operating system.
+     *
+     * Ensures the CakePHP script is always invoked through the PHP
+     * interpreter and normalizes directory separators on Windows.
      *
      * @param string $command The command to normalize
      * @return string The normalized command
@@ -129,10 +211,11 @@ class CommandBuilder
     {
         if (self::isWindows()) {
             $command = str_replace('/', '\\', $command);
+        }
 
-            if (str_starts_with($command, 'bin\\cake.php')) {
-                $command = 'php ' . $command;
-            }
+        $remainder = self::stripCakeCommandPrefix($command);
+        if ($remainder !== null) {
+            return self::getCakeCommandPrefix() . $remainder;
         }
 
         return $command;

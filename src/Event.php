@@ -580,7 +580,7 @@ class Event
     public function mutexName(): string
     {
         return 'schedule-' .
-            sha1($this->expression . static::normalizeCommand($this->command ?? ''));
+            sha1($this->expression . CommandBuilder::normalizeCommandForComparison($this->command ?? ''));
     }
 
     /**
@@ -626,27 +626,6 @@ class Event
         ) {
             $registry->register($signal, $release);
         }
-    }
-
-    /**
-     * Format the given command string with a normalized PHP binary path.
-     *
-     * @param string $command The command
-     * @return string The normalized command
-     */
-    public static function normalizeCommand(string $command): string
-    {
-        $cakePath = CommandBuilder::getCakeCommandPrefix();
-
-        return str_replace([
-            'php',
-            'bin/cake.php',
-            'bin\\cake.php',
-        ], [
-            PHP_BINARY,
-            $cakePath,
-            $cakePath,
-        ], $command);
     }
 
     /**
