@@ -29,7 +29,7 @@ class ScheduledTaskFailed extends Event
         BaseSchedulerCommand $subject,
         ScheduledEvent $event,
         Throwable $exception,
-        ?float $runtime = null
+        ?float $runtime = null,
     ) {
         parent::__construct('Scheduling.ScheduledTaskFailed', $subject, [
             'event' => $event,

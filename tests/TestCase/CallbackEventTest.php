@@ -6,7 +6,10 @@ namespace Crustum\Scheduling\Test\TestCase;
 use Cake\TestSuite\TestCase;
 use Crustum\Scheduling\CacheEventMutex;
 use Crustum\Scheduling\CallbackEvent;
+use Exception;
+use InvalidArgumentException;
 use LogicException;
+use ReflectionClass;
 use RuntimeException;
 
 class CallbackEventTest extends TestCase
@@ -37,7 +40,7 @@ class CallbackEventTest extends TestCase
 
     public function testConstructorWithInvalidCallback(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Invalid scheduled callback event. Must be a string or callable.');
 
         new CallbackEvent($this->mutex, 123);
@@ -50,7 +53,7 @@ class CallbackEventTest extends TestCase
 
         $event = new CallbackEvent($this->mutex, function () use (&$runs): void {
             if (++$runs === 1) {
-                throw new \Exception('First run failed.');
+                throw new Exception('First run failed.');
             }
         });
         $event->onSuccess(function () use (&$success): void {
@@ -62,7 +65,7 @@ class CallbackEventTest extends TestCase
 
         try {
             $event->run();
-        } catch (\Exception) {
+        } catch (Exception) {
         }
 
         $this->assertFalse($success);
@@ -92,7 +95,7 @@ class CallbackEventTest extends TestCase
         };
 
         $event = new CallbackEvent($this->mutex, $callback);
-        $reflection = new \ReflectionClass($event);
+        $reflection = new ReflectionClass($event);
         $method = $reflection->getMethod('execute');
 
         $exitCode = $method->invoke($event);
@@ -104,7 +107,7 @@ class CallbackEventTest extends TestCase
     public function testExecuteWithStringCallback(): void
     {
         $event = new CallbackEvent($this->mutex, 'strlen', ['test']);
-        $reflection = new \ReflectionClass($event);
+        $reflection = new ReflectionClass($event);
         $method = $reflection->getMethod('execute');
 
         $exitCode = $method->invoke($event);
@@ -117,7 +120,7 @@ class CallbackEventTest extends TestCase
         $callback = (fn(): false => false);
 
         $event = new CallbackEvent($this->mutex, $callback);
-        $reflection = new \ReflectionClass($event);
+        $reflection = new ReflectionClass($event);
         $method = $reflection->getMethod('execute');
 
         $exitCode = $method->invoke($event);
@@ -128,11 +131,11 @@ class CallbackEventTest extends TestCase
     public function testExecuteWithException(): void
     {
         $callback = function (): void {
-            throw new \RuntimeException('Test exception');
+            throw new RuntimeException('Test exception');
         };
 
         $event = new CallbackEvent($this->mutex, $callback);
-        $reflection = new \ReflectionClass($event);
+        $reflection = new ReflectionClass($event);
         $method = $reflection->getMethod('execute');
 
         $exitCode = $method->invoke($event);
@@ -143,21 +146,21 @@ class CallbackEventTest extends TestCase
         $exception = $exceptionProperty->getValue($event);
 
         $this->assertNotNull($exception);
-        $this->assertInstanceOf(\RuntimeException::class, $exception);
+        $this->assertInstanceOf(RuntimeException::class, $exception);
     }
 
     public function testRunThrowsExceptionIfSet(): void
     {
         $callback = function (): void {
-            throw new \RuntimeException('Test exception');
+            throw new RuntimeException('Test exception');
         };
 
         $event = new CallbackEvent($this->mutex, $callback);
-        $reflection = new \ReflectionClass($event);
+        $reflection = new ReflectionClass($event);
         $method = $reflection->getMethod('execute');
         $method->invoke($event);
 
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Test exception');
 
         $event->run();
@@ -284,7 +287,7 @@ class CallbackEventTest extends TestCase
         $event = new CallbackEvent($this->mutex, fn(): true => true);
         $event->name('test-event');
 
-        $reflection = new \ReflectionClass($event);
+        $reflection = new ReflectionClass($event);
         $method = $reflection->getMethod('removeMutex');
 
         $this->assertNull($method->invoke($event));
@@ -294,7 +297,7 @@ class CallbackEventTest extends TestCase
     {
         $event = new CallbackEvent($this->mutex, fn(): true => true);
 
-        $reflection = new \ReflectionClass($event);
+        $reflection = new ReflectionClass($event);
         $method = $reflection->getMethod('removeMutex');
 
         $this->assertNull($method->invoke($event));

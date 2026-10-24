@@ -64,7 +64,7 @@ class CommandBuilder
         return $this->ensureCorrectUser(
             $event,
             '(' . $command . $redirect . $output . ' 2>&1 ; ' . $finished . ' "$?") > '
-            . $this->escapeArgument($event->getDefaultOutput()) . ' 2>&1 &'
+            . $this->escapeArgument($event->getDefaultOutput()) . ' 2>&1 &',
         );
     }
 

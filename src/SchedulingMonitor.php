@@ -52,9 +52,9 @@ class SchedulingMonitor
      * @param string|null $command The command string
      * @return string
      */
-    public static function getEventType($event, ?string $command): string
+    public static function getEventType(mixed $event, ?string $command): string
     {
-        if ($event instanceof \Crustum\Scheduling\CallbackEvent) {
+        if ($event instanceof CallbackEvent) {
             return self::EVENT_TYPE_CALLBACK;
         }
 
@@ -74,7 +74,7 @@ class SchedulingMonitor
      * @param string|null $command The command string
      * @return string
      */
-    public static function generateEventName($event, ?string $command): string
+    public static function generateEventName(Event $event, ?string $command): string
     {
         if (!empty($event->getMonitorName())) {
             return self::limitMonitorName($event->getMonitorName());
@@ -85,7 +85,7 @@ class SchedulingMonitor
         }
 
         if (empty($command)) {
-            if ($event instanceof \Crustum\Scheduling\CallbackEvent) {
+            if ($event instanceof CallbackEvent) {
                 return self::limitMonitorName(self::EVENT_TYPE_CALLBACK . '-' . uniqid());
             }
 

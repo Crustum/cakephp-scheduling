@@ -8,6 +8,7 @@ use Cake\ORM\TableRegistry;
 use Crustum\Rhythm\Event\SharedBeat;
 use Crustum\Rhythm\Recorder\BaseRecorder;
 use Crustum\Rhythm\Recorder\Trait\ThrottlingTrait;
+use Exception;
 
 /**
  * Scheduled Tasks Recorder
@@ -69,16 +70,16 @@ class ScheduledTasksRecorder extends BaseRecorder implements EventListenerInterf
                         'overdue' => $stats['overdue'],
                         'timestamp' => $timestamp,
                     ], JSON_THROW_ON_ERROR),
-                    $timestamp
+                    $timestamp,
                 );
 
                 $this->rhythm->set(
                     'scheduled_tasks',
                     'details',
                     json_encode($taskDetails, JSON_THROW_ON_ERROR),
-                    $timestamp
+                    $timestamp,
                 );
-            } catch (\Exception $exception) {
+            } catch (Exception $exception) {
                 debug('ScheduledTasksRecorder error: ' . $exception->getMessage());
             }
         });

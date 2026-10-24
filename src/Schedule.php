@@ -10,6 +10,7 @@ use Cake\Chronos\Chronos;
 use Cake\Core\Configure;
 use Closure;
 use DateTimeInterface;
+use DateTimeZone;
 use RuntimeException;
 use UnitEnum;
 
@@ -63,7 +64,7 @@ class Schedule
      *
      * @var \DateTimeZone|string|null
      */
-    protected $timezone;
+    protected DateTimeZone|string|null $timezone = null;
 
     /**
      * The cache of mutex results.
@@ -128,7 +129,7 @@ class Schedule
      * @param \Crustum\Scheduling\EventMutexInterface|null $eventMutex The event mutex
      * @param \Crustum\Scheduling\SchedulingMutexInterface|null $schedulingMutex The scheduling mutex
      */
-    public function __construct($timezone = null, ?EventMutexInterface $eventMutex = null, ?SchedulingMutexInterface $schedulingMutex = null)
+    public function __construct(DateTimeZone|string|null $timezone = null, ?EventMutexInterface $eventMutex = null, ?SchedulingMutexInterface $schedulingMutex = null)
     {
         $this->timezone = $timezone;
         $this->eventMutex = $eventMutex ?? new CacheEventMutex();
@@ -138,17 +139,17 @@ class Schedule
     /**
      * Add a new callback event to the schedule.
      *
-     * @param string|callable $callback The callback
+     * @param callable|string $callback The callback
      * @param array<mixed> $parameters The parameters
      * @return \Crustum\Scheduling\CallbackEvent
      */
-    public function call($callback, array $parameters = []): CallbackEvent
+    public function call(string|callable $callback, array $parameters = []): CallbackEvent
     {
         $this->events[] = $event = new CallbackEvent(
             $this->eventMutex,
             $callback,
             $parameters,
-            $this->timezone
+            $this->timezone,
         );
 
         $this->mergePendingAttributes($event);
@@ -203,7 +204,7 @@ class Schedule
      */
     public function group(Closure $events): void
     {
-        if (!$this->attributes instanceof \Crustum\Scheduling\PendingEventAttributes) {
+        if (!$this->attributes instanceof PendingEventAttributes) {
             throw new RuntimeException('Invoke an attribute method such as Schedule::daily() before defining a schedule group.');
         }
 
@@ -270,7 +271,7 @@ class Schedule
      * @param array<mixed> $value The value
      * @return string The compiled input
      */
-    public function compileArrayInput($key, array $value): string
+    public function compileArrayInput(string|int $key, array $value): string
     {
         $compiled = [];
 
@@ -397,7 +398,7 @@ class Schedule
         Cache::write(
             static::INTERRUPT_CACHE_KEY,
             self::timestampMs(Chronos::now()),
-            static::controlCacheStore()
+            static::controlCacheStore(),
         );
     }
 
@@ -491,7 +492,7 @@ class Schedule
      * @param \UnitEnum|string $store The cache store
      * @return $this
      */
-    public function useCache(UnitEnum|string $store)
+    public function useCache(UnitEnum|string $store): static
     {
         $store = $this->enumToString($store);
 
@@ -549,7 +550,7 @@ class Schedule
         throw new BadMethodCallException(sprintf(
             'Method %s::%s does not exist.',
             static::class,
-            $method
+            $method,
         ));
     }
 }

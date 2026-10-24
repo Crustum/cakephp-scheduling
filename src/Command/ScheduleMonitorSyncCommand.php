@@ -3,10 +3,9 @@ declare(strict_types=1);
 
 namespace Crustum\Scheduling\Command;
 
-use Cake\Console\Arguments;
-use Cake\Console\ConsoleIo;
 use Cake\Console\ConsoleOptionParser;
 use Crustum\Scheduling\Service\ScheduleMonitorService;
+use Exception;
 use Override;
 
 /**
@@ -49,18 +48,14 @@ class ScheduleMonitorSyncCommand extends BaseSchedulerCommand
     /**
      * Implement this method with your command's logic.
      *
-     * @param \Cake\Console\Arguments $args The command arguments.
-     * @param \Cake\Console\ConsoleIo $io The console io
      * @return int|null The exit code or null for success
      */
-    public function execute(Arguments $args, ConsoleIo $io): ?int
+    public function execute(): ?int
     {
-        $io->info('Starting schedule sync...');
-
-        $dryRun = $args->getOption('dry-run');
-
+        $this->io->info('Starting schedule sync...');
+        $dryRun = $this->args->getOption('dry-run');
         if ($dryRun) {
-            $io->warning('DRY RUN MODE - No changes will be made');
+            $this->io->warning('DRY RUN MODE - No changes will be made');
         }
 
         try {
@@ -68,23 +63,23 @@ class ScheduleMonitorSyncCommand extends BaseSchedulerCommand
             $service = new ScheduleMonitorService($schedule);
 
             if ($dryRun) {
-                $io->info('DRY RUN: Would sync monitored tasks');
-                $io->success('DRY RUN completed');
+                $this->io->info('DRY RUN: Would sync monitored tasks');
+                $this->io->success('DRY RUN completed');
             } else {
                 $result = $service->syncMonitoredTasks();
 
-                $io->success(sprintf(
+                $this->io->success(sprintf(
                     'Successfully synced %d tasks (%d created, %d updated, %d removed)',
                     $result['synced'],
                     $result['created'],
                     $result['updated'],
-                    $result['removed']
+                    $result['removed'],
                 ));
             }
 
             return static::CODE_SUCCESS;
-        } catch (\Exception $exception) {
-            $io->error(sprintf('Error syncing schedule: %s', $exception->getMessage()));
+        } catch (Exception $exception) {
+            $this->io->error(sprintf('Error syncing schedule: %s', $exception->getMessage()));
 
             return static::CODE_ERROR;
         }

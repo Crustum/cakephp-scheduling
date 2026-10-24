@@ -3,10 +3,12 @@ declare(strict_types=1);
 
 namespace Crustum\Scheduling\Test\TestCase\Command;
 
+use Cake\Chronos\Chronos;
 use Cake\Console\TestSuite\ConsoleIntegrationTestTrait;
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
 use Crustum\Scheduling\Schedule;
+use TestApp\Application;
 
 class ScheduleListCommandTest extends TestCase
 {
@@ -17,7 +19,7 @@ class ScheduleListCommandTest extends TestCase
         parent::setUp();
         $this->setAppNamespace();
         $this->configApplication(
-            \TestApp\Application::class,
+            Application::class,
             [PLUGIN_TESTS . 'TestApp' . DS . 'config'],
         );
 
@@ -28,7 +30,7 @@ class ScheduleListCommandTest extends TestCase
     public function testListWithNoEvents(): void
     {
         $schedule = new Schedule();
-        $this->mockService(Schedule::class, fn(): \Crustum\Scheduling\Schedule => $schedule);
+        $this->mockService(Schedule::class, fn(): Schedule => $schedule);
 
         $this->exec('schedule list');
 
@@ -42,7 +44,7 @@ class ScheduleListCommandTest extends TestCase
         $schedule->command('echo "daily"')->daily();
         $schedule->command('echo "hourly"')->hourly();
 
-        $this->mockService(Schedule::class, fn(): \Crustum\Scheduling\Schedule => $schedule);
+        $this->mockService(Schedule::class, fn(): Schedule => $schedule);
 
         $this->exec('schedule list');
 
@@ -57,7 +59,7 @@ class ScheduleListCommandTest extends TestCase
         $schedule = new Schedule();
         $schedule->command('echo "test"')->daily()->description('Test command');
 
-        $this->mockService(Schedule::class, fn(): \Crustum\Scheduling\Schedule => $schedule);
+        $this->mockService(Schedule::class, fn(): Schedule => $schedule);
 
         $this->exec('schedule list --verbose');
 
@@ -70,7 +72,7 @@ class ScheduleListCommandTest extends TestCase
         $schedule = new Schedule();
         $schedule->command('echo "solo"')->daily()->name('solo-task')->onOneServer();
 
-        $this->mockService(Schedule::class, fn(): \Crustum\Scheduling\Schedule => $schedule);
+        $this->mockService(Schedule::class, fn(): Schedule => $schedule);
 
         $this->exec('schedule list --verbose');
 
@@ -80,29 +82,29 @@ class ScheduleListCommandTest extends TestCase
 
     public function testListConvertsExpressionToDisplayTimezone(): void
     {
-        \Cake\Chronos\Chronos::setTestNow('2026-01-15 12:00:00');
+        Chronos::setTestNow('2026-01-15 12:00:00');
 
         $schedule = new Schedule();
         $schedule->command('echo "daily"')->dailyAt('08:00')->timezone('America/Los_Angeles');
 
-        $this->mockService(Schedule::class, fn(): \Crustum\Scheduling\Schedule => $schedule);
+        $this->mockService(Schedule::class, fn(): Schedule => $schedule);
 
         $this->exec('schedule list --timezone=UTC');
 
         $this->assertExitSuccess();
         $this->assertOutputContains('0 16 * * *');
 
-        \Cake\Chronos\Chronos::setTestNow();
+        Chronos::setTestNow();
     }
 
     public function testListSplitsExpressionWhenMixedCarry(): void
     {
-        \Cake\Chronos\Chronos::setTestNow('2026-01-15 12:00:00');
+        Chronos::setTestNow('2026-01-15 12:00:00');
 
         $schedule = new Schedule();
         $schedule->command('echo "twice"')->cron('0 13,17 1 * *')->timezone('America/Los_Angeles');
 
-        $this->mockService(Schedule::class, fn(): \Crustum\Scheduling\Schedule => $schedule);
+        $this->mockService(Schedule::class, fn(): Schedule => $schedule);
 
         $this->exec('schedule list --timezone=UTC');
 
@@ -111,35 +113,35 @@ class ScheduleListCommandTest extends TestCase
         $this->assertOutputContains('0 1 2 * *');
         $this->assertOutputContains('Found 1 scheduled event(s)');
 
-        \Cake\Chronos\Chronos::setTestNow();
+        Chronos::setTestNow();
     }
 
     public function testListMergesMixedCarryWhenDaysAreWildcards(): void
     {
-        \Cake\Chronos\Chronos::setTestNow('2026-01-15 12:00:00');
+        Chronos::setTestNow('2026-01-15 12:00:00');
 
         $schedule = new Schedule();
         $schedule->command('echo "twice"')->twiceDaily(13, 17)->timezone('America/Los_Angeles');
 
-        $this->mockService(Schedule::class, fn(): \Crustum\Scheduling\Schedule => $schedule);
+        $this->mockService(Schedule::class, fn(): Schedule => $schedule);
 
         $this->exec('schedule list --timezone=UTC');
 
         $this->assertExitSuccess();
         $this->assertOutputContains('0 1,21 * * *');
 
-        \Cake\Chronos\Chronos::setTestNow();
+        Chronos::setTestNow();
     }
 
     public function testListUsesOffsetAtNextRunDateAcrossDst(): void
     {
-        \Cake\Chronos\Chronos::setTestNow('2023-10-29');
+        Chronos::setTestNow('2023-10-29');
 
         $schedule = new Schedule();
         $schedule->command('echo "oct"')->cron('0 0 30 10 *')->timezone('Europe/London');
         $schedule->command('echo "jun"')->cron('0 0 30 6 *')->timezone('Europe/London');
 
-        $this->mockService(Schedule::class, fn(): \Crustum\Scheduling\Schedule => $schedule);
+        $this->mockService(Schedule::class, fn(): Schedule => $schedule);
 
         $this->exec('schedule list --timezone=UTC');
 
@@ -147,6 +149,6 @@ class ScheduleListCommandTest extends TestCase
         $this->assertOutputContains('0 0 30 10 *');
         $this->assertOutputContains('0 23 29 6 *');
 
-        \Cake\Chronos\Chronos::setTestNow();
+        Chronos::setTestNow();
     }
 }

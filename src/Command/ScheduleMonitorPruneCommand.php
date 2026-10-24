@@ -4,8 +4,6 @@ declare(strict_types=1);
 namespace Crustum\Scheduling\Command;
 
 use Cake\Command\Command;
-use Cake\Console\Arguments;
-use Cake\Console\ConsoleIo;
 use Cake\Console\ConsoleOptionParser;
 use Cake\ORM\TableRegistry;
 use Override;
@@ -42,21 +40,17 @@ class ScheduleMonitorPruneCommand extends Command
     /**
      * Execute the command.
      *
-     * @param \Cake\Console\Arguments $args The command arguments.
-     * @param \Cake\Console\ConsoleIo $io The console io
      * @return int|null The exit code or null for success
      * @phpcsSuppress SlevomatCodingStandard.TypeHints.ReturnTypeHint.MissingNativeTypeHint
      */
-    public function execute(Arguments $args, ConsoleIo $io)
+    public function execute()
     {
-        $days = $args->getOption('days');
+        $days = $this->args->getOption('days');
         $days = is_numeric($days) ? (int)$days : null;
-
         /** @var \Crustum\Scheduling\Model\Table\MonitoredScheduledTaskLogItemsTable $LogItems */
         $LogItems = TableRegistry::getTableLocator()->get('Crustum/Scheduling.MonitoredScheduledTaskLogItems');
         $deleted = $LogItems->cleanupOldItems($days);
-
-        $io->out("Pruned {$deleted} log items older than {$days} days.");
+        $this->io->out("Pruned {$deleted} log items older than {$days} days.");
 
         return static::CODE_SUCCESS;
     }

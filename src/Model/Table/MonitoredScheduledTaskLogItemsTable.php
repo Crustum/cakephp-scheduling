@@ -141,7 +141,7 @@ class MonitoredScheduledTaskLogItemsTable extends Table
      */
     public function findByTaskName(SelectQuery $query, array $options): SelectQuery
     {
-        return $query->matching('MonitoredScheduledTasks', fn(SelectQuery $q) => $q->where(['MonitoredScheduledTasks.name' => $options['task_name']]));
+        return $query->matching('MonitoredScheduledTasks', fn(SelectQuery $q): SelectQuery => $q->where(['MonitoredScheduledTasks.name' => $options['task_name']]));
     }
 
     /**
@@ -230,7 +230,7 @@ class MonitoredScheduledTaskLogItemsTable extends Table
      *
      * @param int $taskId The monitored scheduled task ID
      * @param int $limit The maximum number of items to return
-     * @return \Crustum\Scheduling\Model\Entity\MonitoredScheduledTaskLogItem[]
+     * @return array<\Crustum\Scheduling\Model\Entity\MonitoredScheduledTaskLogItem>
      */
     public function getTaskLogItems(int $taskId, int $limit = 50): array
     {
@@ -265,7 +265,7 @@ class MonitoredScheduledTaskLogItemsTable extends Table
         $query = $this->findByTask($this->find(), ['task_id' => $taskId])
             ->where(['type' => MonitoredScheduledTaskLogItem::TYPE_FAILED]);
 
-        if ($since instanceof \Cake\I18n\DateTime) {
+        if ($since instanceof DateTime) {
             $query->where(['created >=' => $since]);
         }
 
@@ -284,7 +284,7 @@ class MonitoredScheduledTaskLogItemsTable extends Table
         $query = $this->findByTask($this->find(), ['task_id' => $taskId])
             ->where(['type' => MonitoredScheduledTaskLogItem::TYPE_FINISHED]);
 
-        if ($since instanceof \Cake\I18n\DateTime) {
+        if ($since instanceof DateTime) {
             $query->where(['created >=' => $since]);
         }
 
@@ -303,7 +303,7 @@ class MonitoredScheduledTaskLogItemsTable extends Table
         $query = $this->findByTask($this->find(), ['task_id' => $taskId])
             ->where(['type' => MonitoredScheduledTaskLogItem::TYPE_FINISHED]);
 
-        if ($since instanceof \Cake\I18n\DateTime) {
+        if ($since instanceof DateTime) {
             $query->where(['created >=' => $since]);
         }
 

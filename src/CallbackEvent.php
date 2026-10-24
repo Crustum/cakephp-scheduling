@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Crustum\Scheduling;
 
+use DateTimeZone;
 use InvalidArgumentException;
 use LogicException;
 use RuntimeException;
@@ -18,7 +19,7 @@ class CallbackEvent extends Event
     /**
      * The callback to call.
      *
-     * @var string|callable|mixed
+     * @var mixed|callable|string
      */
     protected $callback;
 
@@ -34,7 +35,7 @@ class CallbackEvent extends Event
      *
      * @var mixed
      */
-    protected $result;
+    protected mixed $result;
 
     /**
      * The exception that was thrown when calling the callback, if any.
@@ -52,11 +53,11 @@ class CallbackEvent extends Event
      * @param \DateTimeZone|string|null $timezone The timezone
      * @throws \InvalidArgumentException
      */
-    public function __construct(EventMutexInterface $mutex, $callback, array $parameters = [], $timezone = null)
+    public function __construct(EventMutexInterface $mutex, mixed $callback, array $parameters = [], DateTimeZone|string|null $timezone = null)
     {
         if (!is_string($callback) && !is_callable($callback)) {
             throw new InvalidArgumentException(
-                'Invalid scheduled callback event. Must be a string or callable.'
+                'Invalid scheduled callback event. Must be a string or callable.',
             );
         }
 
@@ -76,7 +77,7 @@ class CallbackEvent extends Event
     {
         parent::run();
 
-        if ($this->exception instanceof \Throwable) {
+        if ($this->exception instanceof Throwable) {
             throw $this->exception;
         }
     }
@@ -97,7 +98,7 @@ class CallbackEvent extends Event
      * @return $this
      * @throws \RuntimeException
      */
-    public function runInBackground()
+    public function runInBackground(): static
     {
         throw new RuntimeException('Scheduled closures can not be run in the background.');
     }
@@ -114,13 +115,13 @@ class CallbackEvent extends Event
         try {
             if (is_object($this->callback)) {
                 if (!is_callable($this->callback)) {
-                    throw new \LogicException('Object callback is not callable.');
+                    throw new LogicException('Object callback is not callable.');
                 }
 
                 $this->result = call_user_func_array($this->callback, $this->parameters);
             } else {
                 if (!is_callable($this->callback)) {
-                    throw new \LogicException('Callback is not callable.');
+                    throw new LogicException('Callback is not callable.');
                 }
 
                 $this->result = call_user_func_array($this->callback, $this->parameters);
@@ -143,11 +144,11 @@ class CallbackEvent extends Event
      * @return $this
      * @throws \LogicException
      */
-    public function withoutOverlapping(int $expiresAt = 1440, bool $releaseOnTerminationSignals = true)
+    public function withoutOverlapping(int $expiresAt = 1440, bool $releaseOnTerminationSignals = true): static
     {
         if (!isset($this->description)) {
             throw new LogicException(
-                "A scheduled event name is required to prevent overlapping. Use the 'name' method before 'withoutOverlapping'."
+                "A scheduled event name is required to prevent overlapping. Use the 'name' method before 'withoutOverlapping'.",
             );
         }
 
@@ -160,11 +161,11 @@ class CallbackEvent extends Event
      * @return $this
      * @throws \LogicException
      */
-    public function onOneServer()
+    public function onOneServer(): static
     {
         if (!isset($this->description)) {
             throw new LogicException(
-                "A scheduled event name is required to only run on one server. Use the 'name' method before 'onOneServer'."
+                "A scheduled event name is required to only run on one server. Use the 'name' method before 'onOneServer'.",
             );
         }
 

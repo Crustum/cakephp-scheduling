@@ -6,7 +6,9 @@ namespace Crustum\Scheduling\Listener;
 use Cake\Event\EventInterface;
 use Cake\Event\EventListenerInterface;
 use Cake\ORM\TableRegistry;
+use Crustum\Scheduling\Event;
 use Crustum\Scheduling\SchedulingMonitor;
+use LogicException;
 
 /**
  * Schedule Monitor Listener
@@ -163,7 +165,7 @@ class ScheduleMonitorListener implements EventListenerInterface
      * @param mixed $task The task object
      * @return string|null
      */
-    protected function getTaskName($task): ?string
+    protected function getTaskName(mixed $task): ?string
     {
         if (!$task) {
             return null;
@@ -173,7 +175,7 @@ class ScheduleMonitorListener implements EventListenerInterface
         if (is_object($task) && method_exists($task, 'getCommand')) {
             try {
                 $command = $task->getCommand();
-            } catch (\LogicException) {
+            } catch (LogicException) {
                 $command = null;
             }
         }
@@ -187,7 +189,7 @@ class ScheduleMonitorListener implements EventListenerInterface
      * @param \Crustum\Scheduling\Event $task The scheduled task
      * @return string|null
      */
-    private function getTaskOutput($task): ?string
+    private function getTaskOutput(Event $task): ?string
     {
         if ($task->output === $task->getDefaultOutput()) {
             return null;

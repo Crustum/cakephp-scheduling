@@ -34,7 +34,7 @@ class MonitoredScheduledTaskLogItem extends Entity
      *
      * @var array<string, bool>
      */
-    protected array $_accessible = [
+    protected array $patchable = [
         'monitored_scheduled_task_id' => true,
         'type' => true,
         'meta' => true,
@@ -45,7 +45,7 @@ class MonitoredScheduledTaskLogItem extends Entity
      *
      * @var array<string>
      */
-    protected array $_hidden = [];
+    protected array $hidden = [];
 
     /**
      * Check if this is a starting log item.

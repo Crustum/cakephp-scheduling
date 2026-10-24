@@ -8,6 +8,9 @@ use Cake\ORM\TableRegistry;
 use Crustum\Scheduling\Event;
 use Crustum\Scheduling\Schedule;
 use Crustum\Scheduling\SchedulingMonitor;
+use DateTimeZone;
+use Exception;
+use LogicException;
 
 /**
  * Schedule Monitor Service
@@ -110,7 +113,7 @@ class ScheduleMonitorService
             $command = null;
             try {
                 $command = $event->getCommand();
-            } catch (\LogicException) {
+            } catch (LogicException) {
                 $command = null;
             }
 
@@ -131,7 +134,7 @@ class ScheduleMonitorService
                 'timezone' => $timezone,
                 'grace_time_in_minutes' => $graceTime,
             ];
-        } catch (\Exception) {
+        } catch (Exception) {
             return null;
         }
     }
@@ -159,7 +162,7 @@ class ScheduleMonitorService
      */
     protected function getEventTimezone(Event $event): ?string
     {
-        if ($event->timezone instanceof \DateTimeZone) {
+        if ($event->timezone instanceof DateTimeZone) {
             return $event->timezone->getName();
         }
 

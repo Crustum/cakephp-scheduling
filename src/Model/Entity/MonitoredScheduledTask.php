@@ -30,7 +30,7 @@ class MonitoredScheduledTask extends Entity
      *
      * @var array<string, bool>
      */
-    protected array $_accessible = [
+    protected array $patchable = [
         'name' => true,
         'type' => true,
         'cron_expression' => true,
@@ -47,7 +47,7 @@ class MonitoredScheduledTask extends Entity
      *
      * @var array<string>
      */
-    protected array $_hidden = [];
+    protected array $hidden = [];
 
     /**
      * Check if the task is currently running.

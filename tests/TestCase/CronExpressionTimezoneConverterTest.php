@@ -187,7 +187,7 @@ class CronExpressionTimezoneConverterTest extends TestCase
         string $expression,
         string $eventTimezone,
         ?string $displayTimezone,
-        array $expectedExpressions
+        array $expectedExpressions,
     ): void {
         $event = new Event(new CacheEventMutex(), 'php foo');
         $event->cron($expression)->timezone($eventTimezone);
@@ -213,11 +213,11 @@ class CronExpressionTimezoneConverterTest extends TestCase
 
             $this->assertSame(
                 ['0 0 30 10 *'],
-                CronExpressionTimezoneConverter::forEvent($first, $display)
+                CronExpressionTimezoneConverter::forEvent($first, $display),
             );
             $this->assertSame(
                 ['0 23 29 6 *'],
-                CronExpressionTimezoneConverter::forEvent($second, $display)
+                CronExpressionTimezoneConverter::forEvent($second, $display),
             );
         } finally {
             Chronos::setTestNow('2026-01-15 12:00:00');

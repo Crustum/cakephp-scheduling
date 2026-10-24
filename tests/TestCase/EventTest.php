@@ -7,6 +7,7 @@ use Cake\Chronos\Chronos;
 use Cake\TestSuite\TestCase;
 use Crustum\Scheduling\CacheEventMutex;
 use Crustum\Scheduling\Event;
+use Crustum\Scheduling\EventMutexInterface;
 
 class EventTest extends TestCase
 {
@@ -112,7 +113,7 @@ class EventTest extends TestCase
 
     public function testMutexPreventsOverlappingExecution(): void
     {
-        $mutex = $this->createMock(\Crustum\Scheduling\EventMutexInterface::class);
+        $mutex = $this->createMock(EventMutexInterface::class);
         $mutex->expects($this->once())->method('create')->willReturn(false);
 
         $event = new Event($mutex, 'php -v');

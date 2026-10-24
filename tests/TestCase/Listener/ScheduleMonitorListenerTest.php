@@ -13,7 +13,9 @@ use Crustum\Scheduling\Event\ScheduledTaskFailed;
 use Crustum\Scheduling\Event\ScheduledTaskFinished;
 use Crustum\Scheduling\Event\ScheduledTaskSkipped;
 use Crustum\Scheduling\Event\ScheduledTaskStarting;
+use Crustum\Scheduling\EventMutexInterface;
 use Crustum\Scheduling\Listener\ScheduleMonitorListener;
+use Exception;
 
 class ScheduleMonitorListenerTest extends TestCase
 {
@@ -49,7 +51,7 @@ class ScheduleMonitorListenerTest extends TestCase
         ]);
         $table->saveOrFail($task);
 
-        $mutex = $this->createStub(\Crustum\Scheduling\EventMutexInterface::class);
+        $mutex = $this->createStub(EventMutexInterface::class);
         $scheduledEvent = new Event($mutex, 'test:command');
         $scheduledEvent->useMonitoring()->monitorName($taskName);
 
@@ -83,7 +85,7 @@ class ScheduleMonitorListenerTest extends TestCase
         ]);
         $table->saveOrFail($task);
 
-        $mutex = $this->createStub(\Crustum\Scheduling\EventMutexInterface::class);
+        $mutex = $this->createStub(EventMutexInterface::class);
         $scheduledEvent = new Event($mutex, 'test:command');
         $scheduledEvent->useMonitoring()->monitorName($taskName);
 
@@ -110,12 +112,12 @@ class ScheduleMonitorListenerTest extends TestCase
         ]);
         $table->saveOrFail($task);
 
-        $mutex = $this->createStub(\Crustum\Scheduling\EventMutexInterface::class);
+        $mutex = $this->createStub(EventMutexInterface::class);
         $scheduledEvent = new Event($mutex, 'test:command');
         $scheduledEvent->useMonitoring()->monitorName($taskName);
 
         $command = $this->createStub(BaseSchedulerCommand::class);
-        $exception = new \Exception('Test failure');
+        $exception = new Exception('Test failure');
         $event = new ScheduledTaskFailed($command, $scheduledEvent, $exception);
 
         $this->eventManager->dispatch($event);
@@ -137,7 +139,7 @@ class ScheduleMonitorListenerTest extends TestCase
         ]);
         $table->saveOrFail($task);
 
-        $mutex = $this->createStub(\Crustum\Scheduling\EventMutexInterface::class);
+        $mutex = $this->createStub(EventMutexInterface::class);
         $scheduledEvent = new Event($mutex, 'test:command');
         $scheduledEvent->useMonitoring()->monitorName($taskName);
 
@@ -154,7 +156,7 @@ class ScheduleMonitorListenerTest extends TestCase
     {
         $table = TableRegistry::getTableLocator()->get('Crustum/Scheduling.MonitoredScheduledTasks');
 
-        $mutex = $this->createStub(\Crustum\Scheduling\EventMutexInterface::class);
+        $mutex = $this->createStub(EventMutexInterface::class);
         $scheduledEvent = new Event($mutex, 'test:command');
         $scheduledEvent->disableMonitoring();
 
@@ -183,7 +185,7 @@ class ScheduleMonitorListenerTest extends TestCase
         $outputFile = TMP . 'test_output_' . uniqid() . '.txt';
         file_put_contents($outputFile, 'Test output content');
 
-        $mutex = $this->createStub(\Crustum\Scheduling\EventMutexInterface::class);
+        $mutex = $this->createStub(EventMutexInterface::class);
         $scheduledEvent = new Event($mutex, 'test:command');
         $scheduledEvent->useMonitoring()->monitorName($taskName);
         $scheduledEvent->storeOutputInDb();
@@ -224,7 +226,7 @@ class ScheduleMonitorListenerTest extends TestCase
         $outputFile = TMP . 'test_output_' . uniqid() . '.txt';
         file_put_contents($outputFile, 'Test output content');
 
-        $mutex = $this->createStub(\Crustum\Scheduling\EventMutexInterface::class);
+        $mutex = $this->createStub(EventMutexInterface::class);
         $scheduledEvent = new Event($mutex, 'test:command');
         $scheduledEvent->useMonitoring()->monitorName($taskName);
         $scheduledEvent->output = $outputFile;

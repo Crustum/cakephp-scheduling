@@ -6,7 +6,7 @@ namespace Crustum\Scheduling\Test\TestCase;
 /**
  * Test cache store backed enum for Schedule::useCache().
  */
-enum TestCacheStore: string
+enum TestCacheStoreEnum: string
 {
     case Custom = 'custom_store';
 }

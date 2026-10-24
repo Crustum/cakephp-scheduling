@@ -3,10 +3,13 @@ declare(strict_types=1);
 
 namespace Crustum\Scheduling\Test\TestCase\Command;
 
+use Cake\Cache\Cache;
+use Cake\Chronos\Chronos;
 use Cake\Console\TestSuite\ConsoleIntegrationTestTrait;
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
 use Crustum\Scheduling\Schedule;
+use TestApp\Application;
 
 class SchedulePauseResumeCommandTest extends TestCase
 {
@@ -17,7 +20,7 @@ class SchedulePauseResumeCommandTest extends TestCase
         parent::setUp();
         $this->setAppNamespace();
         $this->configApplication(
-            \TestApp\Application::class,
+            Application::class,
             [PLUGIN_TESTS . 'TestApp' . DS . 'config'],
         );
 
@@ -62,7 +65,7 @@ class SchedulePauseResumeCommandTest extends TestCase
 
     public function testInterruptSetsSignal(): void
     {
-        $runStartedAt = \Cake\Chronos\Chronos::now();
+        $runStartedAt = Chronos::now();
 
         $this->exec('schedule interrupt');
         $this->assertExitSuccess();
@@ -72,23 +75,23 @@ class SchedulePauseResumeCommandTest extends TestCase
 
     public function testInterruptObservedSinceRunStart(): void
     {
-        $runStartedAt = \Cake\Chronos\Chronos::now();
+        $runStartedAt = Chronos::now();
         Schedule::interrupt();
 
-        $this->assertTrue((new Schedule())->hasBeenInterruptedSince($runStartedAt));
+        $this->assertTrue(new Schedule()->hasBeenInterruptedSince($runStartedAt));
         $this->assertTrue(Schedule::shouldInterrupt($runStartedAt));
     }
 
     public function testStaleInterruptDoesNotAffectNewRuns(): void
     {
-        \Cake\Cache\Cache::write(
+        Cache::write(
             Schedule::INTERRUPT_CACHE_KEY,
             (int)(microtime(true) * 1000) - 60_000,
-            Schedule::controlCacheStore()
+            Schedule::controlCacheStore(),
         );
 
         $this->assertFalse(Schedule::shouldInterrupt());
-        $this->assertFalse((new Schedule())->hasBeenInterruptedSince(\Cake\Chronos\Chronos::now()));
+        $this->assertFalse(new Schedule()->hasBeenInterruptedSince(Chronos::now()));
     }
 
     public function testWithoutInterruptionPollingDisablesChecks(): void
@@ -111,7 +114,7 @@ class SchedulePauseResumeCommandTest extends TestCase
             $ran = true;
         })->everyMinute();
 
-        $this->mockService(Schedule::class, fn(): \Crustum\Scheduling\Schedule => $schedule);
+        $this->mockService(Schedule::class, fn(): Schedule => $schedule);
 
         $this->exec('schedule run -v');
         $this->assertExitSuccess();
@@ -123,7 +126,7 @@ class SchedulePauseResumeCommandTest extends TestCase
             $ranWhenPaused = true;
         })->everyMinute()->evenWhenPaused();
 
-        $this->mockService(Schedule::class, fn(): \Crustum\Scheduling\Schedule => $schedule2);
+        $this->mockService(Schedule::class, fn(): Schedule => $schedule2);
 
         $this->exec('schedule run -v');
         $this->assertExitSuccess();

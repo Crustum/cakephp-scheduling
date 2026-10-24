@@ -3,8 +3,6 @@ declare(strict_types=1);
 
 namespace Crustum\Scheduling\Command;
 
-use Cake\Console\Arguments;
-use Cake\Console\ConsoleIo;
 use Cake\Console\ConsoleOptionParser;
 use Crustum\Scheduling\Event\SchedulePaused;
 use Crustum\Scheduling\Schedule;
@@ -43,22 +41,19 @@ class SchedulePauseCommand extends BaseSchedulerCommand
     /**
      * Implement this method with your command's logic.
      *
-     * @param \Cake\Console\Arguments $args The command arguments.
-     * @param \Cake\Console\ConsoleIo $io The console io
      * @return int|null The exit code or null for success
      */
-    public function execute(Arguments $args, ConsoleIo $io): ?int
+    public function execute(): ?int
     {
         if (!Schedule::$pausable) {
-            $io->error('Schedule pausing is currently disabled.');
+            $this->io->error('Schedule pausing is currently disabled.');
 
             return static::CODE_ERROR;
         }
 
         Schedule::pause();
         $this->dispatchSchedulerEvent(new SchedulePaused($this));
-
-        $io->success('Scheduled task processing has been paused.');
+        $this->io->success('Scheduled task processing has been paused.');
 
         return static::CODE_SUCCESS;
     }

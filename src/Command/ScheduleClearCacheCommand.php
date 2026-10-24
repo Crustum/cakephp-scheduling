@@ -4,9 +4,8 @@ declare(strict_types=1);
 namespace Crustum\Scheduling\Command;
 
 use Cake\Cache\Cache;
-use Cake\Console\Arguments;
-use Cake\Console\ConsoleIo;
 use Cake\Console\ConsoleOptionParser;
+use Throwable;
 
 /**
  * Schedule Clear Cache Command
@@ -52,31 +51,27 @@ class ScheduleClearCacheCommand extends BaseSchedulerCommand
     /**
      * Implement this method with your command's logic.
      *
-     * @param \Cake\Console\Arguments $args The command arguments.
-     * @param \Cake\Console\ConsoleIo $io The console io
      * @return int|null The exit code or null for success
      */
-    public function execute(Arguments $args, ConsoleIo $io): ?int
+    public function execute(): ?int
     {
-        $store = $args->getOption('store');
-        $pattern = $args->getOption('pattern');
-
-        $io->info('Clearing scheduler mutex cache...');
-
+        $store = $this->args->getOption('store');
+        $pattern = $this->args->getOption('pattern');
+        $this->io->info('Clearing scheduler mutex cache...');
         try {
             if ($pattern && is_string($pattern)) {
                 $storeString = is_string($store) ? $store : 'default';
-                $this->clearMutexesByPattern($storeString, $pattern, $io);
+                $this->clearMutexesByPattern($storeString, $pattern);
             } else {
                 $storeString = is_string($store) ? $store : 'default';
-                $this->clearAllMutexes($storeString, $io);
+                $this->clearAllMutexes($storeString);
             }
 
-            $io->success('Scheduler mutex cache cleared successfully.');
+            $this->io->success('Scheduler mutex cache cleared successfully.');
 
             return static::CODE_SUCCESS;
-        } catch (\Throwable $throwable) {
-            $io->error(sprintf('Failed to clear cache: %s', $throwable->getMessage()));
+        } catch (Throwable $throwable) {
+            $this->io->error(sprintf('Failed to clear cache: %s', $throwable->getMessage()));
 
             return static::CODE_ERROR;
         }
@@ -86,16 +81,15 @@ class ScheduleClearCacheCommand extends BaseSchedulerCommand
      * Clear all scheduler mutexes from the cache.
      *
      * @param string $store The cache store
-     * @param \Cake\Console\ConsoleIo $io The console io
      * @return void
      */
-    protected function clearAllMutexes(string $store, ConsoleIo $io): void
+    protected function clearAllMutexes(string $store): void
     {
         $engine = Cache::pool($store);
 
         $engine->clear();
 
-        $io->info(sprintf('Cleared all cache entries from store: %s', $store));
+        $this->io->info(sprintf('Cleared all cache entries from store: %s', $store));
     }
 
     /**
@@ -103,17 +97,16 @@ class ScheduleClearCacheCommand extends BaseSchedulerCommand
      *
      * @param string $store The cache store
      * @param string $pattern The pattern to match
-     * @param \Cake\Console\ConsoleIo $io The console io
      * @return void
      */
-    protected function clearMutexesByPattern(string $store, string $pattern, ConsoleIo $io): void
+    protected function clearMutexesByPattern(string $store, string $pattern): void
     {
         $engine = Cache::pool($store);
 
-        $io->info(sprintf('Clearing mutexes matching pattern: %s', $pattern));
-        $io->warning('Pattern-based clearing is not fully implemented in this version.');
+        $this->io->info(sprintf('Clearing mutexes matching pattern: %s', $pattern));
+        $this->io->warning('Pattern-based clearing is not fully implemented in this version.');
 
         $engine->clear();
-        $io->info('Cleared all cache entries (pattern matching not available).');
+        $this->io->info('Cleared all cache entries (pattern matching not available).');
     }
 }

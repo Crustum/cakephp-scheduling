@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Crustum\Scheduling;
 
+use DateTimeZone;
+
 /**
  * Manage Attributes Trait
  *
@@ -29,7 +31,7 @@ trait ManageAttributesTrait
      *
      * @var \DateTimeZone|string|null
      */
-    public $timezone;
+    public DateTimeZone|string|null $timezone = null;
 
     /**
      * The user the command should run as.
@@ -142,7 +144,7 @@ trait ManageAttributesTrait
      * @param string $user The user to run as
      * @return $this
      */
-    public function user(string $user)
+    public function user(string $user): static
     {
         $this->user = $user;
 
@@ -154,7 +156,7 @@ trait ManageAttributesTrait
      *
      * @return $this
      */
-    public function evenInMaintenanceMode()
+    public function evenInMaintenanceMode(): static
     {
         $this->evenInMaintenanceMode = true;
 
@@ -166,7 +168,7 @@ trait ManageAttributesTrait
      *
      * @return $this
      */
-    public function evenWhenPaused()
+    public function evenWhenPaused(): static
     {
         $this->evenWhenPaused = true;
 
@@ -181,7 +183,7 @@ trait ManageAttributesTrait
      * @param bool $releaseOnTerminationSignals Whether to release the mutex on termination signals
      * @return $this
      */
-    public function withoutOverlapping(int $expiresAt = 1440, bool $releaseOnTerminationSignals = true)
+    public function withoutOverlapping(int $expiresAt = 1440, bool $releaseOnTerminationSignals = true): static
     {
         $this->withoutOverlapping = true;
         $this->expiresAt = $expiresAt;
@@ -202,7 +204,7 @@ trait ManageAttributesTrait
      *
      * @return $this
      */
-    public function onOneServer()
+    public function onOneServer(): static
     {
         $this->onOneServer = true;
 
@@ -214,7 +216,7 @@ trait ManageAttributesTrait
      *
      * @return $this
      */
-    public function runInBackground()
+    public function runInBackground(): static
     {
         $this->runInBackground = true;
 
@@ -227,9 +229,9 @@ trait ManageAttributesTrait
      * @param callable|bool $callback The callback or boolean value
      * @return $this
      */
-    public function when($callback)
+    public function when(callable|bool $callback): static
     {
-        $this->filters[] = is_callable($callback) ? $callback : (fn() => $callback);
+        $this->filters[] = is_callable($callback) ? $callback : (fn(): bool => $callback);
 
         return $this;
     }
@@ -240,9 +242,9 @@ trait ManageAttributesTrait
      * @param callable|bool $callback The callback or boolean value
      * @return $this
      */
-    public function skip($callback)
+    public function skip(callable|bool $callback): static
     {
-        $this->rejects[] = is_callable($callback) ? $callback : (fn() => $callback);
+        $this->rejects[] = is_callable($callback) ? $callback : (fn(): bool => $callback);
 
         return $this;
     }
@@ -253,7 +255,7 @@ trait ManageAttributesTrait
      * @param string $description The description
      * @return $this
      */
-    public function name(string $description)
+    public function name(string $description): static
     {
         return $this->description($description);
     }
@@ -264,7 +266,7 @@ trait ManageAttributesTrait
      * @param string $description The description
      * @return $this
      */
-    public function description(string $description)
+    public function description(string $description): static
     {
         $this->description = $description;
 
@@ -278,7 +280,7 @@ trait ManageAttributesTrait
      * @param bool $append Whether to append to the file
      * @return $this
      */
-    public function sendOutputTo(string $location, bool $append = false)
+    public function sendOutputTo(string $location, bool $append = false): static
     {
         $this->output = $location;
         $this->shouldAppendOutput = $append;
@@ -292,7 +294,7 @@ trait ManageAttributesTrait
      * @param string $location The output location
      * @return $this
      */
-    public function appendOutputTo(string $location)
+    public function appendOutputTo(string $location): static
     {
         return $this->sendOutputTo($location, true);
     }
@@ -303,7 +305,7 @@ trait ManageAttributesTrait
      * @param string $monitorName The monitor name
      * @return $this
      */
-    public function monitorName(string $monitorName)
+    public function monitorName(string $monitorName): static
     {
         $this->monitorName = $monitorName;
 
@@ -316,7 +318,7 @@ trait ManageAttributesTrait
      * @param int $minutes The grace time in minutes
      * @return $this
      */
-    public function graceTimeInMinutes(int $minutes)
+    public function graceTimeInMinutes(int $minutes): static
     {
         $this->graceTimeInMinutes = $minutes;
 
@@ -328,7 +330,7 @@ trait ManageAttributesTrait
      *
      * @return $this
      */
-    public function useMonitoring()
+    public function useMonitoring(): static
     {
         $this->useMonitoring = true;
 
@@ -340,7 +342,7 @@ trait ManageAttributesTrait
      *
      * @return $this
      */
-    public function disableMonitoring()
+    public function disableMonitoring(): static
     {
         $this->useMonitoring = false;
 
@@ -353,7 +355,7 @@ trait ManageAttributesTrait
      * @param bool $store Whether to store output (default: true)
      * @return $this
      */
-    public function storeOutputInDb(bool $store = true)
+    public function storeOutputInDb(bool $store = true): static
     {
         $this->storeOutputInDb = $store;
 

@@ -5,6 +5,8 @@ namespace Crustum\Scheduling\Test\TestCase;
 
 use Cake\Chronos\Chronos;
 use Cake\TestSuite\TestCase;
+use Crustum\Scheduling\CacheEventMutex;
+use Crustum\Scheduling\CallbackEvent;
 use Crustum\Scheduling\Event;
 use Crustum\Scheduling\Schedule;
 
@@ -79,7 +81,7 @@ class ScheduleTest extends TestCase
         $event = $schedule->call($callback);
 
         $this->assertInstanceOf(Event::class, $event);
-        $this->assertInstanceOf(\Crustum\Scheduling\CallbackEvent::class, $event);
+        $this->assertInstanceOf(CallbackEvent::class, $event);
     }
 
     public function testScheduleGroupAppliesBaseAttributesAndAllowsOverrides(): void
@@ -101,7 +103,7 @@ class ScheduleTest extends TestCase
 
     public function testUseCacheAcceptsStringStore(): void
     {
-        $mutex = new \Crustum\Scheduling\CacheEventMutex();
+        $mutex = new CacheEventMutex();
         $schedule = new Schedule(null, $mutex);
         $schedule->useCache('custom_store');
 
@@ -110,9 +112,9 @@ class ScheduleTest extends TestCase
 
     public function testUseCacheAcceptsBackedEnumStore(): void
     {
-        $mutex = new \Crustum\Scheduling\CacheEventMutex();
+        $mutex = new CacheEventMutex();
         $schedule = new Schedule(null, $mutex);
-        $schedule->useCache(TestCacheStore::Custom);
+        $schedule->useCache(TestCacheStoreEnum::Custom);
 
         $this->assertSame('custom_store', $mutex->store);
     }

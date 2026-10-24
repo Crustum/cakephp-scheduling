@@ -286,7 +286,7 @@ class MonitoredScheduledTasksTable extends Table
     public function markAsStarted(string $name, array $meta = []): ?MonitoredScheduledTask
     {
         $task = $this->getByName($name);
-        if (!$task instanceof \Crustum\Scheduling\Model\Entity\MonitoredScheduledTask) {
+        if (!$task instanceof MonitoredScheduledTask) {
             return null;
         }
 
@@ -296,7 +296,7 @@ class MonitoredScheduledTasksTable extends Table
         $this->MonitoredScheduledTaskLogItems->createLogItem(
             $task->get('id'),
             MonitoredScheduledTaskLogItem::TYPE_STARTING,
-            $meta
+            $meta,
         );
 
         return $task;
@@ -342,7 +342,7 @@ class MonitoredScheduledTasksTable extends Table
      * @param \Crustum\Scheduling\Model\Entity\MonitoredScheduledTask $task The task
      * @return array<string, mixed>
      */
-    public function getTaskStatusInfo($task): array
+    public function getTaskStatusInfo(MonitoredScheduledTask $task): array
     {
         $status = $this->getTaskStatus($task);
         $isOverdue = $this->isTaskOverdue($task);
@@ -386,7 +386,7 @@ class MonitoredScheduledTasksTable extends Table
      * @param \Crustum\Scheduling\Model\Entity\MonitoredScheduledTask $task The task
      * @return string
      */
-    protected function getTaskStatus($task): string
+    protected function getTaskStatus(MonitoredScheduledTask $task): string
     {
         if ($task->isRunning()) {
             return 'running';
@@ -409,7 +409,7 @@ class MonitoredScheduledTasksTable extends Table
      * @param \Crustum\Scheduling\Model\Entity\MonitoredScheduledTask $task The task
      * @return bool
      */
-    protected function isTaskOverdue($task): bool
+    protected function isTaskOverdue(MonitoredScheduledTask $task): bool
     {
         $lastFinished = $task->get('last_finished');
         if (!$lastFinished) {
@@ -431,7 +431,7 @@ class MonitoredScheduledTasksTable extends Table
      */
     protected function formatDateTime(?DateTime $datetime, ?string $format = null): string
     {
-        if (!$datetime instanceof \Cake\I18n\DateTime) {
+        if (!$datetime instanceof DateTime) {
             return 'Never';
         }
 
@@ -467,7 +467,7 @@ class MonitoredScheduledTasksTable extends Table
     public function markAsStarting(string $taskName, array $meta = []): bool
     {
         $task = $this->getByName($taskName);
-        if (!$task instanceof \Crustum\Scheduling\Model\Entity\MonitoredScheduledTask) {
+        if (!$task instanceof MonitoredScheduledTask) {
             return false;
         }
 
@@ -493,7 +493,7 @@ class MonitoredScheduledTasksTable extends Table
     public function markAsFinished(string $taskName, array $meta = []): bool
     {
         $task = $this->getByName($taskName);
-        if (!$task instanceof \Crustum\Scheduling\Model\Entity\MonitoredScheduledTask) {
+        if (!$task instanceof MonitoredScheduledTask) {
             return false;
         }
 
@@ -519,7 +519,7 @@ class MonitoredScheduledTasksTable extends Table
     public function markAsFailed(string $taskName, array $meta = []): bool
     {
         $task = $this->getByName($taskName);
-        if (!$task instanceof \Crustum\Scheduling\Model\Entity\MonitoredScheduledTask) {
+        if (!$task instanceof MonitoredScheduledTask) {
             return false;
         }
 
@@ -545,7 +545,7 @@ class MonitoredScheduledTasksTable extends Table
     public function markAsSkipped(string $taskName, array $meta = []): bool
     {
         $task = $this->getByName($taskName);
-        if (!$task instanceof \Crustum\Scheduling\Model\Entity\MonitoredScheduledTask) {
+        if (!$task instanceof MonitoredScheduledTask) {
             return false;
         }
 

@@ -3,11 +3,13 @@ declare(strict_types=1);
 
 namespace Crustum\Scheduling\Test\TestCase\Event;
 
+use Cake\Event\Event as CakeEvent;
 use Cake\TestSuite\TestCase;
 use Crustum\Scheduling\CacheEventMutex;
 use Crustum\Scheduling\Command\BaseSchedulerCommand;
 use Crustum\Scheduling\Event;
 use Crustum\Scheduling\Event\ScheduledTaskFailed;
+use Exception;
 
 class ScheduledTaskFailedTest extends TestCase
 {
@@ -22,7 +24,7 @@ class ScheduledTaskFailedTest extends TestCase
     {
         $command = $this->createStub(BaseSchedulerCommand::class);
         $event = $this->createEvent('php -v');
-        $exception = new \Exception('Command failed');
+        $exception = new Exception('Command failed');
 
         $scheduledEvent = new ScheduledTaskFailed($command, $event, $exception);
 
@@ -37,7 +39,7 @@ class ScheduledTaskFailedTest extends TestCase
     {
         $command = $this->createStub(BaseSchedulerCommand::class);
         $event = $this->createEvent('php -v');
-        $exception = new \Exception('Command failed');
+        $exception = new Exception('Command failed');
 
         $scheduledEvent = new ScheduledTaskFailed($command, $event, $exception, 12.5);
 
@@ -49,12 +51,12 @@ class ScheduledTaskFailedTest extends TestCase
     {
         $command = $this->createStub(BaseSchedulerCommand::class);
         $event = $this->createEvent('php -v');
-        $exception = new \Exception('Command failed');
+        $exception = new Exception('Command failed');
 
         $scheduledEvent = new ScheduledTaskFailed($command, $event, $exception);
 
         // Test that event can be dispatched (no exception thrown)
-        $this->assertInstanceOf(\Cake\Event\Event::class, $scheduledEvent);
+        $this->assertInstanceOf(CakeEvent::class, $scheduledEvent);
         $this->assertSame('Scheduling.ScheduledTaskFailed', $scheduledEvent->getName());
     }
 }

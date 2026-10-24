@@ -8,6 +8,7 @@ use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
 use Crustum\Scheduling\CommandBuilder;
 use Crustum\Scheduling\Schedule;
+use TestApp\Application;
 
 class ScheduleRunCommandTest extends TestCase
 {
@@ -18,7 +19,7 @@ class ScheduleRunCommandTest extends TestCase
         parent::setUp();
         $this->setAppNamespace();
         $this->configApplication(
-            \TestApp\Application::class,
+            Application::class,
             [PLUGIN_TESTS . 'TestApp' . DS . 'config'],
         );
 
@@ -43,13 +44,13 @@ class ScheduleRunCommandTest extends TestCase
         $schedule->command('echo "test"')->everyMinute();
 
         // Override the container to use our real schedule
-        $this->mockService(Schedule::class, fn(): \Crustum\Scheduling\Schedule => $schedule);
+        $this->mockService(Schedule::class, fn(): Schedule => $schedule);
 
         $this->exec('schedule run -v');
 
         $this->assertExitSuccess();
         $this->assertOutputContains(
-            'Running scheduled command: ' . CommandBuilder::getCakeCommandPrefix() . 'echo "test"'
+            'Running scheduled command: ' . CommandBuilder::getCakeCommandPrefix() . 'echo "test"',
         );
     }
 
@@ -64,13 +65,13 @@ class ScheduleRunCommandTest extends TestCase
         $schedule->command('echo "test"')->everyMinute();
 
         // Override the container to use our real schedule
-        $this->mockService(Schedule::class, fn(): \Crustum\Scheduling\Schedule => $schedule);
+        $this->mockService(Schedule::class, fn(): Schedule => $schedule);
 
         $this->exec('schedule run -v');
 
         $this->assertExitSuccess();
         $this->assertOutputContains(
-            'Running scheduled command: ' . CommandBuilder::getCakeCommandPrefix() . 'echo "test"'
+            'Running scheduled command: ' . CommandBuilder::getCakeCommandPrefix() . 'echo "test"',
         );
     }
 }

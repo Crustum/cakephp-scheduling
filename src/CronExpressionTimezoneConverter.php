@@ -30,7 +30,7 @@ class CronExpressionTimezoneConverter
         $offsetComponents = static::offsetComponents(
             $event,
             $eventTimezone,
-            $timezone
+            $timezone,
         );
 
         if ($offsetComponents === null) {
@@ -83,7 +83,7 @@ class CronExpressionTimezoneConverter
     protected static function offsetComponents(
         Event $event,
         DateTimeZone $eventTimezone,
-        DateTimeZone $displayTimezone
+        DateTimeZone $displayTimezone,
     ): ?array {
         try {
             $at = $event->nextRunDate(Chronos::now())->toNative();
@@ -95,13 +95,13 @@ class CronExpressionTimezoneConverter
 
         $totalOffsetMinutes = intdiv(
             $displayTimezone->getOffset($at) - $eventTimezone->getOffset($at),
-            60
+            60,
         );
 
         if (
             $nextAt instanceof DateTimeImmutable && $totalOffsetMinutes !== intdiv(
                 $displayTimezone->getOffset($nextAt) - $eventTimezone->getOffset($nextAt),
-                60
+                60,
             )
         ) {
             return null;
@@ -127,7 +127,7 @@ class CronExpressionTimezoneConverter
             $minuteOffset,
             0,
             59,
-            mergeCarries: $daysAreWildcard && static::expand($segments[1], 0, 23) === range(0, 23)
+            mergeCarries: $daysAreWildcard && static::expand($segments[1], 0, 23) === range(0, 23),
         );
 
         if ($minuteGroups === null) {
@@ -142,7 +142,7 @@ class CronExpressionTimezoneConverter
                 $hourOffset + (int)$minuteCarry,
                 0,
                 23,
-                mergeCarries: $daysAreWildcard
+                mergeCarries: $daysAreWildcard,
             );
 
             if ($hourGroups === null) {
@@ -333,7 +333,7 @@ class CronExpressionTimezoneConverter
         int $offset,
         int $min,
         int $max,
-        bool $mergeCarries
+        bool $mergeCarries,
     ): ?array {
         if ($offset === 0) {
             return [0 => $field];
@@ -448,7 +448,7 @@ class CronExpressionTimezoneConverter
     {
         $shifted = array_values(array_unique(array_map(
             static fn(int $value): int => (($value + $offset - $min) % $mod + $mod) % $mod + $min,
-            $values
+            $values,
         )));
         sort($shifted);
 

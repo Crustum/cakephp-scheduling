@@ -4,9 +4,8 @@ declare(strict_types=1);
 namespace Crustum\Scheduling\Command;
 
 use Cake\Chronos\Chronos;
-use Cake\Console\Arguments;
-use Cake\Console\ConsoleIo;
 use Cake\Console\ConsoleOptionParser;
+use Throwable;
 
 /**
  * Schedule Test Command
@@ -52,87 +51,80 @@ class ScheduleTestCommand extends BaseSchedulerCommand
     /**
      * Implement this method with your command's logic.
      *
-     * @param \Cake\Console\Arguments $args The command arguments.
-     * @param \Cake\Console\ConsoleIo $io The console io
      * @return int|null The exit code or null for success
      */
-    public function execute(Arguments $args, ConsoleIo $io): ?int
+    public function execute(): ?int
     {
-        $index = (int)$args->getArgument('index');
-        $force = $args->getOption('force');
-        $verbose = $args->getOption('verbose');
-
+        $index = (int)$this->args->getArgument('index');
+        $force = $this->args->getOption('force');
+        $verbose = $this->args->getOption('verbose');
         $schedule = $this->getSchedule();
         $events = $schedule->events();
-
         if ($events === []) {
-            $io->error('No scheduled events are defined.');
+            $this->io->error('No scheduled events are defined.');
 
             return static::CODE_ERROR;
         }
 
         if ($index < 1 || $index > count($events)) {
-            $io->error(sprintf('Invalid index. Please choose between 1 and %d.', count($events)));
+            $this->io->error(sprintf('Invalid index. Please choose between 1 and %d.', count($events)));
 
             return static::CODE_ERROR;
         }
 
         $event = $events[$index - 1];
         $summary = $event->getSummaryForDisplay();
-
-        $io->info(sprintf('Testing scheduled command: %s', $summary));
-        $io->out('');
-
+        $this->io->info(sprintf('Testing scheduled command: %s', $summary));
+        $this->io->out('');
         if (!$force && !$event->isDue()) {
-            $io->warning('This command is not due to run at this time.');
+            $this->io->warning('This command is not due to run at this time.');
             $nextRun = $event->nextRunDate();
-            $io->out(sprintf('Next run: %s', $nextRun->format('Y-m-d H:i:s T')));
-            $io->out('');
+            $this->io->out(sprintf('Next run: %s', $nextRun->format('Y-m-d H:i:s T')));
+            $this->io->out('');
 
-            if ($io->askChoice('Do you want to run it anyway?', ['y', 'n'], 'n') !== 'y') {
-                $io->info('Command execution cancelled.');
+            if ($this->io->askChoice('Do you want to run it anyway?', ['y', 'n'], 'n') !== 'y') {
+                $this->io->info('Command execution cancelled.');
 
                 return static::CODE_SUCCESS;
             }
         }
 
         if (!$event->filtersPass()) {
-            $io->warning('This command would be skipped due to filters.');
-            if ($io->askChoice('Do you want to run it anyway?', ['y', 'n'], 'n') !== 'y') {
-                $io->info('Command execution cancelled.');
+            $this->io->warning('This command would be skipped due to filters.');
+            if ($this->io->askChoice('Do you want to run it anyway?', ['y', 'n'], 'n') !== 'y') {
+                $this->io->info('Command execution cancelled.');
 
                 return static::CODE_SUCCESS;
             }
         }
 
         if ($event->onOneServer && !$schedule->serverShouldRun($event, Chronos::now())) {
-            $io->warning('This command is already running on another server.');
-            if ($io->askChoice('Do you want to run it anyway?', ['y', 'n'], 'n') !== 'y') {
-                $io->info('Command execution cancelled.');
+            $this->io->warning('This command is already running on another server.');
+            if ($this->io->askChoice('Do you want to run it anyway?', ['y', 'n'], 'n') !== 'y') {
+                $this->io->info('Command execution cancelled.');
 
                 return static::CODE_SUCCESS;
             }
         }
 
-        $io->info('Executing command...');
-        $io->out('');
+        $this->io->info('Executing command...');
+        $this->io->out('');
 
         $startedAt = microtime(true);
-
         try {
             $event->run();
             $runtime = round((microtime(true) - $startedAt) * 1000.0, 2);
 
-            $io->success(sprintf('Command executed successfully in %sms.', $runtime));
+            $this->io->success(sprintf('Command executed successfully in %sms.', $runtime));
 
             return static::CODE_SUCCESS;
-        } catch (\Throwable $throwable) {
-            $io->error(sprintf('Command failed: %s', $throwable->getMessage()));
+        } catch (Throwable $throwable) {
+            $this->io->error(sprintf('Command failed: %s', $throwable->getMessage()));
 
             if ($verbose) {
-                $io->out('');
-                $io->out('Stack trace:');
-                $io->out($throwable->getTraceAsString());
+                $this->io->out('');
+                $this->io->out('Stack trace:');
+                $this->io->out($throwable->getTraceAsString());
             }
 
             return static::CODE_ERROR;

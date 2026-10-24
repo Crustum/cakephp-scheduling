@@ -3,9 +3,12 @@ declare(strict_types=1);
 
 namespace Crustum\Scheduling\Test\TestCase;
 
+use Cake\Chronos\Chronos;
 use Cake\TestSuite\TestCase;
 use Crustum\Scheduling\CacheEventMutex;
 use Crustum\Scheduling\Event;
+use InvalidArgumentException;
+use ReflectionClass;
 
 class FrequencyTest extends TestCase
 {
@@ -16,7 +19,7 @@ class FrequencyTest extends TestCase
         parent::setUp();
         $this->event = new Event(
             new CacheEventMutex(),
-            'php foo'
+            'php foo',
         );
     }
 
@@ -120,11 +123,11 @@ class FrequencyTest extends TestCase
     public function testLastDayOfMonth(): void
     {
         // Set a specific date that has 31 days (October 2024)
-        \Cake\Chronos\Chronos::setTestNow('2024-10-15 10:10:10');
+        Chronos::setTestNow('2024-10-15 10:10:10');
 
         $this->assertSame('0 0 31 * *', $this->event->lastDayOfMonth()->getExpression());
 
-        \Cake\Chronos\Chronos::setTestNow();
+        Chronos::setTestNow();
     }
 
     public function testTwiceMonthly(): void
@@ -144,10 +147,10 @@ class FrequencyTest extends TestCase
 
     public function testEverySecondRejectsNonPositiveSeconds(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('must be greater than zero');
 
-        $reflection = new \ReflectionClass($this->event);
+        $reflection = new ReflectionClass($this->event);
         $method = $reflection->getMethod('repeatEvery');
         $method->invoke($this->event, 0);
     }

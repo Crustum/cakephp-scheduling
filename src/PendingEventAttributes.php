@@ -65,7 +65,7 @@ class PendingEventAttributes
      * @param bool $releaseOnTerminationSignals Whether to release the mutex on termination signals
      * @return $this
      */
-    public function withoutOverlapping(int $expiresAt = 1440, bool $releaseOnTerminationSignals = true)
+    public function withoutOverlapping(int $expiresAt = 1440, bool $releaseOnTerminationSignals = true): static
     {
         $this->withoutOverlapping = true;
         $this->expiresAt = $expiresAt;

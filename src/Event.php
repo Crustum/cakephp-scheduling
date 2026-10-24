@@ -6,7 +6,17 @@ namespace Crustum\Scheduling;
 use Cake\Chronos\Chronos;
 use Cake\Event\Event as CakeEvent;
 use Cake\Event\EventManager;
+use Cake\Log\Log;
+use Closure;
 use Cron\CronExpression;
+use Crustum\Scheduling\Event\ScheduledTaskSkipped;
+use DateTimeInterface;
+use DateTimeZone;
+use LogicException;
+use ReflectionFunction;
+use ReflectionNamedType;
+use SignalHandler\Signal\Signal;
+use SignalHandler\Signal\SignalRegistry;
 use Symfony\Component\Process\Process;
 use Throwable;
 
@@ -36,7 +46,7 @@ class Event
     public function getCommand(): string
     {
         if ($this->command === null) {
-            throw new \LogicException('Command is not set for this event.');
+            throw new LogicException('Command is not set for this event.');
         }
 
         return $this->command;
@@ -106,7 +116,7 @@ class Event
      * @param string $command The command to execute
      * @param \DateTimeZone|string|null $timezone The timezone
      */
-    public function __construct(EventMutexInterface $mutex, string $command, $timezone = null)
+    public function __construct(EventMutexInterface $mutex, string $command, DateTimeZone|string|null $timezone = null)
     {
         $this->mutex = $mutex;
         $this->command = $command;
@@ -137,7 +147,7 @@ class Event
 
         if ($this->shouldSkipDueToOverlapping()) {
             $this->skippedBecauseOverlapping = true;
-            $this->dispatchSchedulerEvent(new \Crustum\Scheduling\Event\ScheduledTaskSkipped($this));
+            $this->dispatchSchedulerEvent(new ScheduledTaskSkipped($this));
 
             return;
         }
@@ -207,7 +217,7 @@ class Event
             return false;
         }
 
-        if (!$this->lastChecked instanceof \Cake\Chronos\Chronos) {
+        if (!$this->lastChecked instanceof Chronos) {
             return true;
         }
 
@@ -245,7 +255,7 @@ class Event
             ROOT,
             null,
             null,
-            null
+            null,
         );
 
         if (!$this->runInBackground) {
@@ -261,7 +271,7 @@ class Event
      * @param \Symfony\Component\Process\Process $process The process
      * @return int The exit code
      */
-    protected function runForegroundProcess($process): int
+    protected function runForegroundProcess(Process $process): int
     {
         if ($this->output !== $this->getDefaultOutput()) {
             return $process->run();
@@ -269,7 +279,7 @@ class Event
 
         $process->run(function ($type, $buffer) use ($process): void {
             if ($type === $process::ERR) {
-                \Cake\Log\Log::error('Scheduled command error: ' . trim($buffer));
+                Log::error('Scheduled command error: ' . trim($buffer));
             }
         });
 
@@ -325,7 +335,7 @@ class Event
      */
     protected function callEventCallback(callable $callback): mixed
     {
-        if ($callback instanceof \Closure) {
+        if ($callback instanceof Closure) {
             $parameters = $this->eventParametersForCallback($callback);
             if ($parameters !== []) {
                 return $callback(...$parameters);
@@ -341,13 +351,13 @@ class Event
      * @param \Closure $callback The callback
      * @return array<string, mixed>
      */
-    protected function eventParametersForCallback(\Closure $callback): array
+    protected function eventParametersForCallback(Closure $callback): array
     {
-        $reflection = new \ReflectionFunction($callback);
+        $reflection = new ReflectionFunction($callback);
 
         foreach ($reflection->getParameters() as $parameter) {
             $type = $parameter->getType();
-            if ($type instanceof \ReflectionNamedType && !$type->isBuiltin()) {
+            if ($type instanceof ReflectionNamedType && !$type->isBuiltin()) {
                 $typeName = $type->getName();
                 if (is_a($this, $typeName)) {
                     return [$parameter->getName() => $this];
@@ -365,7 +375,7 @@ class Event
      */
     public function buildCommand(): string
     {
-        return (new CommandBuilder())->buildCommand($this);
+        return new CommandBuilder()->buildCommand($this);
     }
 
     /**
@@ -419,7 +429,7 @@ class Event
             $date = $date->setTimezone($this->timezone);
         }
 
-        return (new CronExpression($this->expression))->isDue($date->toDateTimeString());
+        return new CronExpression($this->expression)->isDue($date->toDateTimeString());
     }
 
     /**
@@ -429,7 +439,7 @@ class Event
      */
     protected function shouldRepeat(): bool
     {
-        if (!$this->lastChecked instanceof \Cake\Chronos\Chronos) {
+        if (!$this->lastChecked instanceof Chronos) {
             return true;
         }
 
@@ -456,13 +466,7 @@ class Event
             }
         }
 
-        foreach ($this->rejects as $callback) {
-            if ($this->callEventCallback($callback)) {
-                return false;
-            }
-        }
-
-        return true;
+        return array_all($this->rejects, fn(callable $callback): bool => !$this->callEventCallback($callback));
     }
 
     /**
@@ -471,7 +475,7 @@ class Event
      * @param callable $callback The callback
      * @return $this
      */
-    public function before(callable $callback)
+    public function before(callable $callback): static
     {
         $this->beforeCallbacks[] = $callback;
 
@@ -484,7 +488,7 @@ class Event
      * @param callable $callback The callback
      * @return $this
      */
-    public function after(callable $callback)
+    public function after(callable $callback): static
     {
         return $this->then($callback);
     }
@@ -495,7 +499,7 @@ class Event
      * @param callable $callback The callback
      * @return $this
      */
-    public function then(callable $callback)
+    public function then(callable $callback): static
     {
         $this->afterCallbacks[] = $callback;
 
@@ -508,7 +512,7 @@ class Event
      * @param callable $callback The callback
      * @return $this
      */
-    public function onSuccess(callable $callback)
+    public function onSuccess(callable $callback): static
     {
         return $this->then(function () use ($callback): void {
             if ($this->exitCode === 0) {
@@ -523,7 +527,7 @@ class Event
      * @param callable $callback The callback
      * @return $this
      */
-    public function onFailure(callable $callback)
+    public function onFailure(callable $callback): static
     {
         return $this->then(function () use ($callback): void {
             if ($this->exitCode !== 0) {
@@ -554,11 +558,11 @@ class Event
      * @param bool $allowCurrentDate Whether to allow current date
      * @return \Cake\Chronos\Chronos The next run date
      */
-    public function nextRunDate($currentTime = 'now', int $nth = 0, bool $allowCurrentDate = false): Chronos
+    public function nextRunDate(DateTimeInterface|string $currentTime = 'now', int $nth = 0, bool $allowCurrentDate = false): Chronos
     {
-        $timezone = $this->timezone instanceof \DateTimeZone ? $this->timezone->getName() : $this->timezone;
+        $timezone = $this->timezone instanceof DateTimeZone ? $this->timezone->getName() : $this->timezone;
 
-        return Chronos::instance((new CronExpression($this->getExpression()))
+        return Chronos::instance(new CronExpression($this->getExpression())
             ->getNextRunDate($currentTime, $nth, $allowCurrentDate, $timezone));
     }
 
@@ -605,12 +609,12 @@ class Event
         if (
             !$this->releaseOnTerminationSignals
             || $this->runInBackground
-            || !\SignalHandler\Signal\SignalRegistry::isSupported()
+            || !SignalRegistry::isSupported()
         ) {
             return;
         }
 
-        $registry = new \SignalHandler\Signal\SignalRegistry();
+        $registry = new SignalRegistry();
         $release = function () use ($registry): void {
             $this->removeMutex();
             $registry->unregister();
@@ -619,9 +623,9 @@ class Event
 
         foreach (
             [
-            \SignalHandler\Signal\Signal::SIGTERM,
-            \SignalHandler\Signal\Signal::SIGINT,
-            \SignalHandler\Signal\Signal::SIGQUIT,
+            Signal::SIGTERM,
+            Signal::SIGINT,
+            Signal::SIGQUIT,
             ] as $signal
         ) {
             $registry->register($signal, $release);

@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Crustum\Scheduling\Test\TestCase\Event;
 
+use Cake\Event\Event as CakeEvent;
 use Cake\TestSuite\TestCase;
 use Crustum\Scheduling\CacheEventMutex;
 use Crustum\Scheduling\Command\BaseSchedulerCommand;
@@ -37,7 +38,7 @@ class ScheduledTaskStartingTest extends TestCase
 
         $scheduledEvent = new ScheduledTaskStarting($command, $event);
 
-        $this->assertInstanceOf(\Cake\Event\Event::class, $scheduledEvent);
+        $this->assertInstanceOf(CakeEvent::class, $scheduledEvent);
         $this->assertSame('Scheduling.ScheduledTaskStarting', $scheduledEvent->getName());
     }
 }

@@ -3,10 +3,9 @@ declare(strict_types=1);
 
 namespace Crustum\Scheduling\Command;
 
-use Cake\Console\Arguments;
-use Cake\Console\ConsoleIo;
 use Cake\Console\ConsoleOptionParser;
 use Cake\ORM\TableRegistry;
+use Exception;
 use Override;
 
 /**
@@ -57,11 +56,9 @@ class ScheduleMonitorListCommand extends BaseSchedulerCommand
     /**
      * Implement this method with your command's logic.
      *
-     * @param \Cake\Console\Arguments $args The command arguments.
-     * @param \Cake\Console\ConsoleIo $io The console io
      * @return int|null The exit code or null for success
      */
-    public function execute(Arguments $args, ConsoleIo $io): ?int
+    public function execute(): ?int
     {
         try {
             /** @var \Crustum\Scheduling\Model\Table\MonitoredScheduledTasksTable $MonitoredTasks */
@@ -69,7 +66,7 @@ class ScheduleMonitorListCommand extends BaseSchedulerCommand
             $query = $MonitoredTasks->find()
                 ->contain(['MonitoredScheduledTaskLogItems' => fn($q) => $q->orderByDesc('created')->limit(1)]);
 
-            $status = $args->getOption('status');
+            $status = $this->args->getOption('status');
             if ($status) {
                 switch ($status) {
                     case 'running':
@@ -87,12 +84,12 @@ class ScheduleMonitorListCommand extends BaseSchedulerCommand
                 }
             }
 
-            $type = $args->getOption('type');
+            $type = $this->args->getOption('type');
             if ($type) {
                 $query = $MonitoredTasks->findByType($query, ['type' => $type]);
             }
 
-            $recent = $args->getOption('recent');
+            $recent = $this->args->getOption('recent');
             if ($recent) {
                 $query = $MonitoredTasks->findRecent($query, ['hours' => (int)$recent]);
             }
@@ -100,32 +97,32 @@ class ScheduleMonitorListCommand extends BaseSchedulerCommand
             $tasks = $query->orderByDesc('last_started')->toArray();
 
             if (empty($tasks)) {
-                $io->info('No monitored tasks found');
+                $this->io->info('No monitored tasks found');
 
                 return static::CODE_SUCCESS;
             }
 
-            $format = $args->getOption('format');
+            $format = $this->args->getOption('format');
             if ($format === 'json') {
-                $this->outputJson($io, $tasks);
+                $this->outputJson($tasks);
             } else {
-                $this->outputTable($io, $tasks);
+                $this->outputTable($tasks);
             }
 
             $stats = $MonitoredTasks->getStatistics();
-            $io->out('');
-            $io->info(sprintf(
+            $this->io->out('');
+            $this->io->info(sprintf(
                 'Statistics: %d total, %d running, %d failed, %d completed, %d overdue',
                 $stats['total'],
                 $stats['running'],
                 $stats['failed'],
                 $stats['completed'],
-                $stats['overdue']
+                $stats['overdue'],
             ));
 
             return static::CODE_SUCCESS;
-        } catch (\Exception $exception) {
-            $io->error(sprintf('Error listing tasks: %s', $exception->getMessage()));
+        } catch (Exception $exception) {
+            $this->io->error(sprintf('Error listing tasks: %s', $exception->getMessage()));
 
             return static::CODE_ERROR;
         }
@@ -134,11 +131,10 @@ class ScheduleMonitorListCommand extends BaseSchedulerCommand
     /**
      * Output tasks in table format.
      *
-     * @param \Cake\Console\ConsoleIo $io The console io
      * @param array<\Crustum\Scheduling\Model\Entity\MonitoredScheduledTask> $tasks The tasks
      * @return void
      */
-    private function outputTable(ConsoleIo $io, array $tasks): void
+    private function outputTable(array $tasks): void
     {
         $headers = ['Name', 'Type', 'Status', 'Last Started', 'Last Finished', 'Last Failed', 'Cron Expression'];
         $rows = [$headers];
@@ -160,17 +156,16 @@ class ScheduleMonitorListCommand extends BaseSchedulerCommand
             ];
         }
 
-        $io->helper('Table')->output($rows);
+        $this->io->helper('Table')->output($rows);
     }
 
     /**
      * Output tasks in JSON format.
      *
-     * @param \Cake\Console\ConsoleIo $io The console io
      * @param array<\Crustum\Scheduling\Model\Entity\MonitoredScheduledTask> $tasks The tasks
      * @return void
      */
-    private function outputJson(ConsoleIo $io, array $tasks): void
+    private function outputJson(array $tasks): void
     {
         /** @var \Crustum\Scheduling\Model\Table\MonitoredScheduledTasksTable $MonitoredTasks */
         $MonitoredTasks = TableRegistry::getTableLocator()->get('Crustum/Scheduling.MonitoredScheduledTasks');
@@ -194,6 +189,6 @@ class ScheduleMonitorListCommand extends BaseSchedulerCommand
             ];
         }
 
-        $io->out(json_encode($data, JSON_PRETTY_PRINT) ?: '{}');
+        $this->io->out(json_encode($data, JSON_PRETTY_PRINT) ?: '{}');
     }
 }
